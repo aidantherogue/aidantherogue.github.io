@@ -1,0 +1,309 @@
+<html>
+<script src="https://threejs.org/build/three.js"></script>
+
+<body></body>
+<script>
+  const DEG2RAD = Math.PI / 180
+  function deg2rad(deg) {
+    return deg * DEG2RAD
+  }
+
+  function clamp(p, min, max) {
+    return Math.min(Math.max(p, min), max)
+  }
+
+
+  class AxisProxy {
+
+    group
+    player
+    clouds
+
+    constructor() {
+      const group = this.group = new THREE.Group
+      group.add(this.player = makePlayer())
+
+      this.clouds = []
+      for (let i = 0; i < 20; i++) {
+        const cloud = makeCloud()
+        this.clouds.push(cloud)
+        group.add(cloud)
+      }
+      scene.add(group)
+    }
+
+  }
+
+  function makePlayer() {
+    const player = new THREE.Group()
+
+    const playerMeshTemplate = { emissive: 0x072534, side: THREE.DoubleSide, flatShading: true }
+
+    const gBody = new THREE.SphereGeometry(1, 100, 100)
+    gBody.scale(1, 1, 5)
+    gBody.translate(0, 0, -4.5)
+    const mBody = new THREE.MeshPhongMaterial({ color: 0x156289, ...playerMeshTemplate })
+    const body = new THREE.Mesh(gBody, mBody)
+    player.add(body)
+
+    const gWing = new THREE.SphereGeometry(1, 100, 100)
+    gWing.scale(7, 0.3, 1.5)
+    gWing.translate(0, 0, -2.5)
+    const mWing = new THREE.MeshPhongMaterial({ color: 0x896215, ...playerMeshTemplate })
+    const wing = new THREE.Mesh(gWing, mWing)
+    player.add(wing)
+
+    const gTail = new THREE.SphereGeometry(1, 32, 32)
+    gTail.scale(3, 0.2, 1)
+    gTail.translate(0, 0, -8)
+    const mTail = new THREE.MeshPhongMaterial({ color: 0x890000, ...playerMeshTemplate })
+    const tail = new THREE.Mesh(gTail, mTail)
+    player.add(tail)
+
+    const gFin = new THREE.SphereGeometry(1, 32, 32, 0, 3.2, -2.2, 4.8)
+    gFin.scale(0.2, 2, 1)
+    gFin.translate(0, 1, -8)
+    const mFin = new THREE.MeshPhongMaterial({ color: 0x008900, ...playerMeshTemplate })
+    const fin = new THREE.Mesh(gFin, mFin)
+    player.add(fin)
+
+    const gProp = new THREE.SphereGeometry(1, 32, 32)
+    gProp.scale(1.3, 1.3, 0.1)
+    gProp.translate(0, 0, 0.2)
+    const mProp = new THREE.MeshPhongMaterial({ color: 0x000089, ...playerMeshTemplate })
+    const prop = new THREE.Mesh(gProp, mProp)
+    player.add(prop)
+
+    player.scale.set(0.1, 0.1, 0.1)
+    player.position.y = 1
+    return player
+  }
+
+  function makeCloud() {
+    const cloud = new THREE.Group()
+
+    const cloudMesh = new THREE.MeshPhongMaterial(
+      { color: 0x156289, emissive: 0x072534, side: THREE.DoubleSide, flatShading: true }
+    )
+
+    const cloud1 = new THREE.CylinderGeometry(1, 1, 1, 30, 1, false, deg2rad(180), deg2rad(180))
+    cloud1.scale(1, 1, 1)
+    cloud1.translate(-1.9, 0, 1)
+    cloud.add(new THREE.Mesh(cloud1, cloudMesh))
+
+    const cloud2 = new THREE.CylinderGeometry(1, 1, 1, 30, 1, false, deg2rad(0), deg2rad(180))
+    cloud2.scale(1, 1, 1)
+    cloud2.translate(1.9, 0, 1)
+    cloud.add(new THREE.Mesh(cloud2, cloudMesh))
+
+    const cloud3 = new THREE.CylinderGeometry(1, 1, 1, 30, 1, false, -1.6, 3.2)
+    cloud3.scale(1.5, 1, 1.5)
+    cloud3.translate(-0.2, 0, 2.0)
+    cloud.add(new THREE.Mesh(cloud3, cloudMesh))
+
+    const cloud4 = new THREE.CylinderGeometry(1, 1, 1, 30, 1)
+    cloud4.scale(0.6, 1, 0.6)
+    cloud4.translate(1.5, 0, 2.4)
+    cloud.add(new THREE.Mesh(cloud4, cloudMesh))
+
+    const cloud5 = new THREE.BoxGeometry(1, 1, 1)
+    cloud5.scale(3.8, 1, 2)
+    cloud5.translate(0, 0, 1)
+    cloud.add(new THREE.Mesh(cloud5, cloudMesh))
+
+    cloud.scale.set(0.2, 0.2, 0.2)
+    cloud.rotation.x = -deg2rad(90)
+
+    return cloud
+  }
+
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(100, window.innerWidth / window.innerHeight, 0.1, 1000);
+  scene.background = new THREE.Color(0x444444);
+  var renderer = new THREE.WebGLRenderer();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.body.appendChild(renderer.domElement);
+
+  const cameraPositionToAngle = [
+    0, 0, 270, 180, 90,
+  ]
+
+  function getCameraAngle(cameraAngle, cameraPositionIndex) {
+    const newAngle = cameraPositionToAngle[cameraPositionIndex]
+
+    if (newAngle < cameraAngle) {
+      return cameraAngle - 3
+    }
+    if (newAngle > cameraAngle) {
+      return cameraAngle + 3
+    }
+    return newAngle
+  }
+
+  let instance
+  let playerBankAngle
+  let playerPitch
+  let playerSpeed
+  let clouds
+  let cameraPositionIndex = 0
+  let cameraAngle = 0
+  let sceneCameraPosition
+  let sceneCamera
+  let zoom = 1
+
+  function update() {
+    const playerMesh = instance.player
+
+    movePlayer()
+    moveCamera()
+    checkForCloudCollision()
+
+    function movePlayer() {
+      playerMesh.rotation.x = playerPitch * 40 * -Math.cos(playerMesh.rotation.y)
+      playerMesh.rotation.z = -playerBankAngle // + (playerPitch * 20 * Math.sin(player.rotation.y))
+      playerMesh.rotation.y += playerBankAngle / 100
+      playerMesh.position.y += playerPitch
+      playerMesh.position.z += playerSpeed * Math.cos(playerMesh.rotation.y)
+      playerMesh.position.x += playerSpeed * Math.sin(playerMesh.rotation.y)
+    }
+
+    function moveCamera() {
+      if (cameraPositionIndex) {
+        cameraAngle = getCameraAngle(cameraAngle, cameraPositionIndex)
+        const cameraToPlayerOffset = new THREE.Vector3().setFromSphericalCoords(
+          5,
+          deg2rad(-85),
+          playerMesh.rotation.y + deg2rad(cameraAngle)
+        )
+        camera.position.copy(playerMesh.position)
+        camera.position.add(cameraToPlayerOffset)
+
+        camera.lookAt(playerMesh.position.x, playerMesh.position.y + 3, playerMesh.position.z)
+
+        camera.zoom = zoom
+        camera.updateProjectionMatrix()
+      } else {
+        camera.lookAt(playerMesh.position)
+        camera.position.copy(new THREE.Vector3(0, 10, -15))
+      }
+    }
+
+    function checkForCloudCollision() {
+      for (let i = clouds.length - 1; i >= 0; i--) {
+        const cloud = clouds[i]
+        if (playerMesh.position.x < cloud.boxSizePosition.x + 1.1
+          && playerMesh.position.x > cloud.boxSizePosition.x - 1.1
+          && playerMesh.position.y < cloud.boxSizePosition.y + 0.7
+          && playerMesh.position.y > cloud.boxSizePosition.y
+          && playerMesh.position.z < cloud.boxSizePosition.z + 0.02
+          && playerMesh.position.z > cloud.boxSizePosition.z - 0.02
+        ) {
+          instance.group.remove(cloud.mesh)
+          clouds.splice(i, 1)
+        }
+      }
+    }
+  }
+
+
+  function random(min, max) {
+    return Math.random() * (max - min) + min
+  }
+
+
+  function create() {
+    instance = new AxisProxy
+    playerBankAngle = 0
+    playerSpeed = 0.02
+    playerPitch = 0
+    clouds = instance.clouds.map(makeCloud)
+
+    window.onkeydown = keyDown
+
+    function makeCloud(cloud) {
+      const position = new THREE.Vector3(
+        random(5, -5),
+        random(0, 10),
+        random(5, -5)
+      )
+      cloud.position.copy(position)
+
+      return {
+        mesh: cloud,
+        position,
+        boxSizePosition: position,
+      }
+    }
+  }
+
+
+  function keyDown(keyEvent) {
+    if (keyEvent.key === 'a') {
+      playerBankAngle += 0.1
+    }
+    if (keyEvent.key === 'd') {
+      playerBankAngle -= 0.1
+    }
+    if (keyEvent.key === 'r') {
+      playerSpeed += 0.01
+    }
+    if (keyEvent.key === 'f') {
+      playerSpeed -= 0.01
+    }
+    if (keyEvent.key === 's') {
+      playerPitch += 0.0025
+    }
+    if (keyEvent.key === 'w') {
+      playerPitch -= 0.0025
+    }
+    if (keyEvent.key === 'y') {
+      cameraPositionIndex = 1
+    }
+    if (keyEvent.key === 'j') {
+      cameraPositionIndex = 2
+    }
+    if (keyEvent.key === 'n') {
+      cameraPositionIndex = 3
+    }
+    if (keyEvent.key === 'g') {
+      cameraPositionIndex = 4
+    }
+    if (keyEvent.key === 'h') {
+      cameraPositionIndex = 0
+    }
+    if (keyEvent.key === 'i') {
+      zoom += 0.1
+    }
+    if (keyEvent.key === 'k') {
+      zoom -= 0.1
+    }
+
+    playerBankAngle = clamp(playerBankAngle, -0.7, 0.7)
+    playerSpeed = clamp(playerSpeed, 0.02, 0.06)
+    playerPitch = clamp(playerPitch, -0.02, 0.02)
+  }
+
+  const lights = [];
+  lights[0] = new THREE.PointLight(0xffff00, 1, 0);
+  lights[1] = new THREE.PointLight(0xffffff, 1, 0);
+  lights[2] = new THREE.PointLight(0xffffff, 1, 0);
+
+  lights[0].position.set(0, 20, 0);
+  lights[1].position.set(10, 20, 10);
+  lights[2].position.set(- 10, - 20, - 10);
+
+  scene.add(lights[0]);
+  scene.add(lights[1]);
+  scene.add(lights[2]);
+
+  create()
+  var animate = function () {
+    requestAnimationFrame(animate);
+    update();
+    renderer.render(scene, camera);
+  };
+
+  animate();
+</script>
+
+</html>
