@@ -1,0 +1,291 @@
+<html>
+<head>
+</head>
+<body style="font-family: sans-serif">
+<div id="gameGrid">The Game!!!</div>
+<script>
+
+
+(function () {
+
+  var viewWidth = 900;
+  var viewHeight = 900;
+  var TO_RADIANS = Math.PI / 180;
+
+  Game = function () {
+  };
+
+  Game.prototype = {
+    go: function () {
+
+      this.playerImageWhite = new Image();
+      this.playerImageWhite.src = "game_white_plane.png";
+      this.playerImageBlue = new Image();
+      this.playerImageBlue.src = "game_blue_plane.png";
+      this.cloudImageBlue = new Image();
+      this.cloudImageBlue.src = "game_blue_cloud.png";
+      this.cloudImageWhite = new Image();
+      this.cloudImageWhite.src = "game_white_cloud.png";
+
+      this.grayBckgEl = document.getElementById("gameGrid");
+      //if (!this.grayBckgEl) {
+       // this.grayBckgEl = document.createElement('div');
+        //this.grayBckgEl.id = "view_background";
+        this.grayBckgEl.style.position = "absolute";
+        this.grayBckgEl.style.backgroundColor = "#5BE2ED";
+
+        this.grayBckgEl.style.top = "10px";
+        this.grayBckgEl.style.left = "30px";
+        this.grayBckgEl.style.height = viewHeight + "px";
+        this.grayBckgEl.style.width = viewWidth + "px";
+        //this.grayBckgEl.style.fontFamily = "arial";
+       // this.onResize();
+
+        this.grayBckgEl.style.margin = "0";
+        this.grayBckgEl.style.padding = "0";
+        this.grayBckgEl.style.zIndex = "8888";
+		this.grayBckgEl.tabStop = true;
+
+        //document.body.insertBefore(this.grayBckgEl, document.body.firstChild);
+      //}
+
+      this.grayBckgEl.innerHTML = "<div id='view_close' style='background: url(\"game_common_sprite.png\") no-repeat scroll 0 -111px transparent;position:absolute;right:-13px;top:-13px;height:30px;width:30px'></div>" +
+        "<div id='messagetext' style='color:#5BE2ED;top:5px;left:13px;height:45px;position:absolute;font-size:40px;width:90px'></div>" +
+        "<div id='timetext' style='overflow:hidden;color:#5BE2ED;top:5px;right:13px;height:45px;position:absolute;font-size:40px;width:252px'></div>" +
+        "<div id='turnindicator' style='color:#5BE2ED;top:12px;left:200px;height:45px;position:absolute;font-size:20px;width:152px;text-align:center;line-height:18px'>TURN<br />L<span id='turntext' style='color:red'></span>R</div>" +
+        "<div id='speedindicator' style='color:#5BE2ED;top:12px;left:360px;height:45px;position:absolute;font-size:20px;width:152px;text-align:center;line-height:18px'>SPEED<br />S<span id='speedtext' style='color:red'></span>F</div>" +
+        "<div id='start_page' style='position:absolute;opacity:0.4;background-color:#000;width:780px;height:780px;top:50px;left:50px;border:10px solid #5BE2ED;color:#fff'></div>" +
+        "<div style='position:absolute;height:860px;width:845px;margin:30px;top:0px;overflow:hidden'>" +
+        "<div id='name_text' style='position:absolute;text-align:center;opacity:0.8;top:900px;font-size:20px;background-color:rgba(255,255,255,0.8)'></div>" +
+        "</div>" +
+        "<canvas id='view_canvas' width='880px' height='880px' style='background-color:#fff;margin:10px 10px'> </canvas>";
+      this.grayBckgEl.style.display = "block";
+
+      this.viewCanvas = document.getElementById("view_canvas");
+      this.viewClose = document.getElementById("view_close");
+      this.blanktext = document.getElementById("blanktext");
+      this.messagetext = document.getElementById("messagetext");
+      this.timetext = document.getElementById("timetext");
+      this.startPage = document.getElementById("start_page");
+      this.startPage.innerHTML = "<div style='font-size:30px; text-align:center'><p>" +
+        "^^^^&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^^^^&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>" +
+        "Turn Indicator&nbsp;&nbsp;&nbsp;&nbsp;Speed Indicator</p>" +
+        "<p>&nbsp;</p><p>Left arrow for bank left</p><p>Right arrow for bank right</p><p>Hint: Tap 4 times for fastest turn</p><p>&nbsp;</p><p>Up arrow for faster</p><p>Down arrow for slower</p><p>&nbsp;</p><div id='start321'></div></div>";
+      this.start321 = document.getElementById("start321");
+      this.nameText = document.getElementById("name_text");
+      this.turnText = document.getElementById("turntext");
+      this.speedText = document.getElementById("speedtext");
+      
+      this.context = this.viewCanvas.getContext('2d');
+      this.playerX = 200;
+      this.playerY = 400;
+      this.playerDx = 1;
+      this.playerDy = 0;
+      this.playerAngle = 0;
+      this.playerDAngle = 0;
+      this.playerSpeed = 1;
+      this.playerScore = 0;
+
+      this.clouds = [];
+      for (var i = 0; i < 25; i++) {
+        var x = 40 + Math.random() * 820;
+        var y = 40 + Math.random() * 820;
+        var valid = false;
+        while (!valid) {
+          valid = true;
+          for (var j = 0; j < this.clouds.length; j++) {
+            if (this.getDistance(x, y, this.clouds[j].x, this.clouds[j].y) < 50) {
+              x = 40 + Math.random() * 820;
+              y = 40 + Math.random() * 820;
+              valid = false;
+              break;
+            }
+          }
+        }
+        this.clouds.push({ x: x, y: y });
+      }
+
+      this.totalTime = 0;
+      this.timeLoopExit = false;
+      this.updateMessage(this.playerScore);
+      this.updateTime(this.totalTime);
+      this.updateTurn(0);
+      this.updateSpeed(1);
+      this.startCounter = 3;
+      this.namePlace = 900;
+      this.nameText.innerHTML = "S......... proudly presented by<br /><br />Aidan, Alan, Alison, Andrew, Barry, Bjorn, Carol, Caroline, Cathy, Chris, Clare, Colin, Cornelia, Craig, Daniel, Daniela, Dave, Dean, Debs, Denis, Douglas, Filippo, Fiona, Frank, Gabriela, Gareth, George, Grzegorz, Helen, Iain, Jackie, James, Janet, Jenny, Joanna, Joe, John, Jonny, Joseph, Julie, Karin, Kevin, Laura, Linda, Lorraine, Mark, Martin, Mary, Michal, Monika, Murat, Neil, Phil, Piotr, Raquel, Rik, Ronan, Ryan, Sam, Little Sam, Sarah, Scott, Shane, Sheena, Simon, Stanley, Stuart, Suzanne, Timur, Tony, Victoria, Yoda <br />and everyone I've missed.";
+      
+      setTimeout(() => this.startLoop(), 500);
+      document.addEventListener("keydown", (e, d) => this.onKeyDown(e, d));
+      document.addEventListener("onkeydown", (e, d) => this.onKeyDown(e, d));
+      this.viewClose.addEventListener("click", () => this.onViewClose());
+    },
+
+    startLoop: function () {
+      if (this.exit) return;
+      if (this.startCounter == 0) {
+        this.drawClouds();
+       setTimeout(() => this.mainLoop(), 500);
+        this.startTime = new Date().getTime();
+        this.startPage.style.display = "none";
+      setTimeout(() => this.timeLoop(), 1000);
+        return;
+      }
+      this.start321.innerHTML += this.startCounter + ".. ";
+      this.startCounter--;
+	  setTimeout(() => this.startLoop(), 1000);
+    },
+
+    timeLoop: function () {
+      if (this.exit) return;
+      if (this.timeLoopExit) return;
+      this.totalTime = new Date().getTime() - this.startTime;
+      this.updateTime(this.totalTime);
+      setTimeout(() => this.timeLoop(), 100);
+
+    },
+
+    nameLoop: function () {
+      if (this.exit) return;
+      this.namePlace -= 3;
+      this.nameText.style.top = this.namePlace + 'px';
+      if (this.namePlace > 200)
+        setTimeout(() => this.nameLoop(), 50);
+    },
+
+    drawClouds: function () {
+      for (var i = 0; i < 25; i++) {
+        this.drawImage(this.context, this.cloudImageWhite, this.clouds[i].x, this.clouds[i].y, 0);
+        this.drawImage(this.context, this.cloudImageBlue, this.clouds[i].x, this.clouds[i].y, 0);
+      }
+    },
+
+    mainLoop: function () {
+      if (this.exit) return;
+      this.drawImage(this.context, this.playerImageWhite, this.playerX, this.playerY, this.playerAngle + 90);
+
+      this.playerAngle += this.playerDAngle;
+      this.playerX = this.playerX + this.playerSpeed * Math.cos(this.playerAngle * TO_RADIANS);
+      this.playerY = this.playerY + this.playerSpeed * Math.sin(this.playerAngle * TO_RADIANS);
+
+      if (this.playerX < 1) this.playerX = 890;
+      if (this.playerX > 890) this.playerX = 1;
+	  if (this.playerY < 1) this.playerY = 890;
+      if (this.playerY > 890) this.playerY = 1;
+	  
+      for (var i = 0, l = this.clouds.length; i < l; i++) {
+        var distance = this.getDistance(this.clouds[i].x, this.clouds[i].y, this.playerX, this.playerY);
+        if (distance < 60) {
+          this.drawImage(this.context, this.cloudImageWhite, this.clouds[i].x, this.clouds[i].y, 0);
+          this.drawImage(this.context, this.cloudImageBlue, this.clouds[i].x, this.clouds[i].y, 0);
+        }
+        if (distance < 30) {
+          this.drawImage(this.context, this.cloudImageWhite, this.clouds[i].x, this.clouds[i].y, 0);
+          this.clouds[i].x = 100000;
+          this.clouds[i].y = 100000;
+          this.playerScore++;
+          this.updateMessage(this.playerScore);
+          if (this.playerScore == 25) {
+            setTimeout(() => this.nameLoop(), 10);
+            this.drawImage(this.context, this.playerImageBlue, this.playerX, this.playerY, this.playerAngle + 90);
+            this.timeLoopExit = true;
+            this.endLoopOnOff = true;
+            setTimeout(() => this.endLoop(), 500);
+            return;
+          }
+        }
+      }
+
+      this.drawImage(this.context, this.playerImageBlue, this.playerX, this.playerY, this.playerAngle + 90);
+      setTimeout(() => this.mainLoop(), 10);
+    },
+
+    endLoop: function () {
+      if (this.endLoopOnOff)
+        this.drawImage(this.context, this.playerImageWhite, this.playerX, this.playerY, this.playerAngle + 90);
+      else
+        this.drawImage(this.context, this.playerImageBlue, this.playerX, this.playerY, this.playerAngle + 90);
+      this.endLoopOnOff = !this.endLoopOnOff;
+      setTimeout(() => this.endLoop(), 500);
+    },
+
+    updateMessage: function (text) {
+      this.messagetext.innerHTML = "Score=" + text;
+    },
+
+    updateTime: function (milliseconds) {
+      var secs = Math.floor(milliseconds / 1000);
+      milliseconds = milliseconds - (secs * 1000);
+      this.timetext.innerHTML = "Time=" + secs + "." + milliseconds;
+    },
+
+    updateTurn: function (turnRate) {
+      turnRate = turnRate * 8;
+      var spaces = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+      var text = spaces.substr(0, (5 + turnRate) * 6);
+      text += '|';
+      text += spaces.substr(0, (5 - turnRate) * 6);
+      this.turnText.innerHTML = text;
+    },
+
+    updateSpeed: function (speed) {
+      speed = (speed - 1) * 2;
+      var spaces = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+      var text = spaces.substr(0, (speed + 1) * 6);
+      text += '|';
+      text += spaces.substr(0, (7 - speed) * 6);
+      this.speedText.innerHTML = text;
+    },
+
+    getDistance: function (x1, y1, x2, y2) {
+      var dx = x1 - x2;
+      var dy = y1 - y2;
+      var distance = Math.sqrt((dx * dx) + (dy * dy));
+      return distance;
+    },
+
+    drawImage: function (context, image, x, y, angle) {
+      context.save();
+      context.translate(x, y);
+      context.rotate(angle * TO_RADIANS);
+      context.drawImage(image, -(image.width / 2), -(image.height / 2));
+      context.restore();
+    },
+
+    onViewClose: function () {
+      this.exit = true;
+      this.grayBckgEl.style.display = "none";
+    },
+
+    onKeyDown: function (e, args) {
+      if (e.keyCode == 37 && this.playerDAngle > -0.5) {
+        this.playerDAngle -= 0.125;
+        this.updateTurn(this.playerDAngle);
+	      e.preventDefault();
+      }
+      if (e.keyCode == 39 && this.playerDAngle < 0.5) {
+        this.playerDAngle += 0.125;
+        this.updateTurn(this.playerDAngle);
+	      e.preventDefault();
+      }
+      if (e.keyCode == 38 && this.playerSpeed < 4) {
+        this.playerSpeed += 1;
+        this.updateSpeed(this.playerSpeed);
+	      e.preventDefault();
+      }
+      if (e.keyCode == 40 && this.playerSpeed > 1) {
+        this.playerSpeed -= 1;
+        this.updateSpeed(this.playerSpeed);
+	      e.preventDefault();
+      }
+    }
+  };
+
+})();
+
+new Game().go();
+
+</script>
+</body>
+</html>
+
