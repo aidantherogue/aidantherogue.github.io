@@ -1,0 +1,215 @@
+<html>
+    <head>
+        <style>
+            body {
+                background-color: white;
+                font-family: 'Bradley Hand';
+            }
+            h1 { 
+                color: rgb(42, 174, 8);
+                width: 420px;
+                text-align: center;
+                font-size: 50px;
+                margin: 0 20px;
+            }
+            .grid {
+                background-color: black;
+                width: 462px;
+                height: 462px;
+                border: solid 10px rgb(248, 212, 5);
+            }
+            .grid div {
+                width: 20px;
+                height: 20px;
+                border: solid 1px grey;
+                display: inline-block;
+                margin: 0;
+            }
+            .grid .body {
+                background-color: rgb(79, 209, 79);
+            }
+            .lose {
+                color: red;
+                font-size: 40px;
+                position: absolute;
+                top: 200px;
+                left: 19px;
+                width: 460px;
+                text-align: center;
+                background-color: black;
+                display: none;
+            }
+            .scores {
+                display: flex;
+                justify-content: space-between;
+                width: 462px;
+            }
+            .playAgain {
+                border: solid 5px red;
+                border-radius: 10px;
+                margin: 0 100px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Snake</h1>
+        <div class="scores">
+          <div>Score <span id="score"></span></div>
+          <div>High Score <span id="highScore"></span></div>
+        </div>
+        <div class="grid">
+            <div id="cell0,20"></div><div id="cell1,20"></div><div id="cell2,20"></div><div id="cell3,20"></div><div id="cell4,20"></div><div id="cell5,20"></div><div id="cell6,20"></div><div id="cell7,20"></div><div id="cell8,20"></div><div id="cell9,20"></div><div id="cell10,20"></div><div id="cell11,20"></div><div id="cell12,20"></div><div id="cell13,20"></div><div id="cell14,20"></div><div id="cell15,20"></div><div id="cell16,20"></div><div id="cell17,20"></div><div id="cell18,20"></div><div id="cell19,20"></div><div id="cell20,20"></div>
+            <div id="cell0,19"></div><div id="cell1,19"></div><div id="cell2,19"></div><div id="cell3,19"></div><div id="cell4,19"></div><div id="cell5,19"></div><div id="cell6,19"></div><div id="cell7,19"></div><div id="cell8,19"></div><div id="cell9,19"></div><div id="cell10,19"></div><div id="cell11,19"></div><div id="cell12,19"></div><div id="cell13,19"></div><div id="cell14,19"></div><div id="cell15,19"></div><div id="cell16,19"></div><div id="cell17,19"></div><div id="cell18,19"></div><div id="cell19,19"></div><div id="cell20,19"></div>
+            <div id="cell0,18"></div><div id="cell1,18"></div><div id="cell2,18"></div><div id="cell3,18"></div><div id="cell4,18"></div><div id="cell5,18"></div><div id="cell6,18"></div><div id="cell7,18"></div><div id="cell8,18"></div><div id="cell9,18"></div><div id="cell10,18"></div><div id="cell11,18"></div><div id="cell12,18"></div><div id="cell13,18"></div><div id="cell14,18"></div><div id="cell15,18"></div><div id="cell16,18"></div><div id="cell17,18"></div><div id="cell18,18"></div><div id="cell19,18"></div><div id="cell20,18"></div>
+            <div id="cell0,17"></div><div id="cell1,17"></div><div id="cell2,17"></div><div id="cell3,17"></div><div id="cell4,17"></div><div id="cell5,17"></div><div id="cell6,17"></div><div id="cell7,17"></div><div id="cell8,17"></div><div id="cell9,17"></div><div id="cell10,17"></div><div id="cell11,17"></div><div id="cell12,17"></div><div id="cell13,17"></div><div id="cell14,17"></div><div id="cell15,17"></div><div id="cell16,17"></div><div id="cell17,17"></div><div id="cell18,17"></div><div id="cell19,17"></div><div id="cell20,17"></div>
+            <div id="cell0,16"></div><div id="cell1,16"></div><div id="cell2,16"></div><div id="cell3,16"></div><div id="cell4,16"></div><div id="cell5,16"></div><div id="cell6,16"></div><div id="cell7,16"></div><div id="cell8,16"></div><div id="cell9,16"></div><div id="cell10,16"></div><div id="cell11,16"></div><div id="cell12,16"></div><div id="cell13,16"></div><div id="cell14,16"></div><div id="cell15,16"></div><div id="cell16,16"></div><div id="cell17,16"></div><div id="cell18,16"></div><div id="cell19,16"></div><div id="cell20,16"></div>
+            <div id="cell0,15"></div><div id="cell1,15"></div><div id="cell2,15"></div><div id="cell3,15"></div><div id="cell4,15"></div><div id="cell5,15"></div><div id="cell6,15"></div><div id="cell7,15"></div><div id="cell8,15"></div><div id="cell9,15"></div><div id="cell10,15"></div><div id="cell11,15"></div><div id="cell12,15"></div><div id="cell13,15"></div><div id="cell14,15"></div><div id="cell15,15"></div><div id="cell16,15"></div><div id="cell17,15"></div><div id="cell18,15"></div><div id="cell19,15"></div><div id="cell20,15"></div>
+            <div id="cell0,14"></div><div id="cell1,14"></div><div id="cell2,14"></div><div id="cell3,14"></div><div id="cell4,14"></div><div id="cell5,14"></div><div id="cell6,14"></div><div id="cell7,14"></div><div id="cell8,14"></div><div id="cell9,14"></div><div id="cell10,14"></div><div id="cell11,14"></div><div id="cell12,14"></div><div id="cell13,14"></div><div id="cell14,14"></div><div id="cell15,14"></div><div id="cell16,14"></div><div id="cell17,14"></div><div id="cell18,14"></div><div id="cell19,14"></div><div id="cell20,14"></div>
+            <div id="cell0,13"></div><div id="cell1,13"></div><div id="cell2,13"></div><div id="cell3,13"></div><div id="cell4,13"></div><div id="cell5,13"></div><div id="cell6,13"></div><div id="cell7,13"></div><div id="cell8,13"></div><div id="cell9,13"></div><div id="cell10,13"></div><div id="cell11,13"></div><div id="cell12,13"></div><div id="cell13,13"></div><div id="cell14,13"></div><div id="cell15,13"></div><div id="cell16,13"></div><div id="cell17,13"></div><div id="cell18,13"></div><div id="cell19,13"></div><div id="cell20,13"></div>
+            <div id="cell0,12"></div><div id="cell1,12"></div><div id="cell2,12"></div><div id="cell3,12"></div><div id="cell4,12"></div><div id="cell5,12"></div><div id="cell6,12"></div><div id="cell7,12"></div><div id="cell8,12"></div><div id="cell9,12"></div><div id="cell10,12"></div><div id="cell11,12"></div><div id="cell12,12"></div><div id="cell13,12"></div><div id="cell14,12"></div><div id="cell15,12"></div><div id="cell16,12"></div><div id="cell17,12"></div><div id="cell18,12"></div><div id="cell19,12"></div><div id="cell20,12"></div>
+            <div id="cell0,11"></div><div id="cell1,11"></div><div id="cell2,11"></div><div id="cell3,11"></div><div id="cell4,11"></div><div id="cell5,11"></div><div id="cell6,11"></div><div id="cell7,11"></div><div id="cell8,11"></div><div id="cell9,11"></div><div id="cell10,11"></div><div id="cell11,11"></div><div id="cell12,11"></div><div id="cell13,11"></div><div id="cell14,11"></div><div id="cell15,11"></div><div id="cell16,11"></div><div id="cell17,11"></div><div id="cell18,11"></div><div id="cell19,11"></div><div id="cell20,11"></div>
+            <div id="cell0,10"></div><div id="cell1,10"></div><div id="cell2,10"></div><div id="cell3,10"></div><div id="cell4,10"></div><div id="cell5,10"></div><div id="cell6,10"></div><div id="cell7,10"></div><div id="cell8,10"></div><div id="cell9,10"></div><div id="cell10,10"></div><div id="cell11,10"></div><div id="cell12,10"></div><div id="cell13,10"></div><div id="cell14,10"></div><div id="cell15,10"></div><div id="cell16,10"></div><div id="cell17,10"></div><div id="cell18,10"></div><div id="cell19,10"></div><div id="cell20,10"></div>
+            <div id="cell0,9"></div><div id="cell1,9"></div><div id="cell2,9"></div><div id="cell3,9"></div><div id="cell4,9"></div><div id="cell5,9"></div><div id="cell6,9"></div><div id="cell7,9"></div><div id="cell8,9"></div><div id="cell9,9"></div><div id="cell10,9"></div><div id="cell11,9"></div><div id="cell12,9"></div><div id="cell13,9"></div><div id="cell14,9"></div><div id="cell15,9"></div><div id="cell16,9"></div><div id="cell17,9"></div><div id="cell18,9"></div><div id="cell19,9"></div><div id="cell20,9"></div>
+            <div id="cell0,8"></div><div id="cell1,8"></div><div id="cell2,8"></div><div id="cell3,8"></div><div id="cell4,8"></div><div id="cell5,8"></div><div id="cell6,8"></div><div id="cell7,8"></div><div id="cell8,8"></div><div id="cell9,8"></div><div id="cell10,8"></div><div id="cell11,8"></div><div id="cell12,8"></div><div id="cell13,8"></div><div id="cell14,8"></div><div id="cell15,8"></div><div id="cell16,8"></div><div id="cell17,8"></div><div id="cell18,8"></div><div id="cell19,8"></div><div id="cell20,8"></div>
+            <div id="cell0,7"></div><div id="cell1,7"></div><div id="cell2,7"></div><div id="cell3,7"></div><div id="cell4,7"></div><div id="cell5,7"></div><div id="cell6,7"></div><div id="cell7,7"></div><div id="cell8,7"></div><div id="cell9,7"></div><div id="cell10,7"></div><div id="cell11,7"></div><div id="cell12,7"></div><div id="cell13,7"></div><div id="cell14,7"></div><div id="cell15,7"></div><div id="cell16,7"></div><div id="cell17,7"></div><div id="cell18,7"></div><div id="cell19,7"></div><div id="cell20,7"></div>
+            <div id="cell0,6"></div><div id="cell1,6"></div><div id="cell2,6"></div><div id="cell3,6"></div><div id="cell4,6"></div><div id="cell5,6"></div><div id="cell6,6"></div><div id="cell7,6"></div><div id="cell8,6"></div><div id="cell9,6"></div><div id="cell10,6"></div><div id="cell11,6"></div><div id="cell12,6"></div><div id="cell13,6"></div><div id="cell14,6"></div><div id="cell15,6"></div><div id="cell16,6"></div><div id="cell17,6"></div><div id="cell18,6"></div><div id="cell19,6"></div><div id="cell20,6"></div>
+            <div id="cell0,5"></div><div id="cell1,5"></div><div id="cell2,5"></div><div id="cell3,5"></div><div id="cell4,5"></div><div id="cell5,5"></div><div id="cell6,5"></div><div id="cell7,5"></div><div id="cell8,5"></div><div id="cell9,5"></div><div id="cell10,5"></div><div id="cell11,5"></div><div id="cell12,5"></div><div id="cell13,5"></div><div id="cell14,5"></div><div id="cell15,5"></div><div id="cell16,5"></div><div id="cell17,5"></div><div id="cell18,5"></div><div id="cell19,5"></div><div id="cell20,5"></div>
+            <div id="cell0,4"></div><div id="cell1,4"></div><div id="cell2,4"></div><div id="cell3,4"></div><div id="cell4,4"></div><div id="cell5,4"></div><div id="cell6,4"></div><div id="cell7,4"></div><div id="cell8,4"></div><div id="cell9,4"></div><div id="cell10,4"></div><div id="cell11,4"></div><div id="cell12,4"></div><div id="cell13,4"></div><div id="cell14,4"></div><div id="cell15,4"></div><div id="cell16,4"></div><div id="cell17,4"></div><div id="cell18,4"></div><div id="cell19,4"></div><div id="cell20,4"></div>
+            <div id="cell0,3"></div><div id="cell1,3"></div><div id="cell2,3"></div><div id="cell3,3"></div><div id="cell4,3"></div><div id="cell5,3"></div><div id="cell6,3"></div><div id="cell7,3"></div><div id="cell8,3"></div><div id="cell9,3"></div><div id="cell10,3"></div><div id="cell11,3"></div><div id="cell12,3"></div><div id="cell13,3"></div><div id="cell14,3"></div><div id="cell15,3"></div><div id="cell16,3"></div><div id="cell17,3"></div><div id="cell18,3"></div><div id="cell19,3"></div><div id="cell20,3"></div>
+            <div id="cell0,2"></div><div id="cell1,2"></div><div id="cell2,2"></div><div id="cell3,2"></div><div id="cell4,2"></div><div id="cell5,2"></div><div id="cell6,2"></div><div id="cell7,2"></div><div id="cell8,2"></div><div id="cell9,2"></div><div id="cell10,2"></div><div id="cell11,2"></div><div id="cell12,2"></div><div id="cell13,2"></div><div id="cell14,2"></div><div id="cell15,2"></div><div id="cell16,2"></div><div id="cell17,2"></div><div id="cell18,2"></div><div id="cell19,2"></div><div id="cell20,2"></div>
+            <div id="cell0,1"></div><div id="cell1,1"></div><div id="cell2,1"></div><div id="cell3,1"></div><div id="cell4,1"></div><div id="cell5,1"></div><div id="cell6,1"></div><div id="cell7,1"></div><div id="cell8,1"></div><div id="cell9,1"></div><div id="cell10,1"></div><div id="cell11,1"></div><div id="cell12,1"></div><div id="cell13,1"></div><div id="cell14,1"></div><div id="cell15,1"></div><div id="cell16,1"></div><div id="cell17,1"></div><div id="cell18,1"></div><div id="cell19,1"></div><div id="cell20,1"></div>
+            <div id="cell0,0"></div><div id="cell1,0"></div><div id="cell2,0"></div><div id="cell3,0"></div><div id="cell4,0"></div><div id="cell5,0"></div><div id="cell6,0"></div><div id="cell7,0"></div><div id="cell8,0"></div><div id="cell9,0"></div><div id="cell10,0"></div><div id="cell11,0"></div><div id="cell12,0"></div><div id="cell13,0"></div><div id="cell14,0"></div><div id="cell15,0"></div><div id="cell16,0"></div><div id="cell17,0"></div><div id="cell18,0"></div><div id="cell19,0"></div><div id="cell20,0"></div>
+        </div>
+        <div class="lose">
+            <div>GAME OVER</div>
+            <div class="playAgain" onclick="playAgainClick()">Play Again</div>
+        </div>
+    </body>
+    <script>
+        // variable = tupperware box
+        // sometimes small tupperware inside big tupperware
+        // code = set of instructions
+        // function some code separated from rest of code
+        //   can be called separately using the name of the function.
+        let direction = 0
+        let body = [ { x: 10, y: 10 } ]
+        let extraBodies = 0
+        let newBodyPosition = undefined
+        let positionOfApple = undefined  
+        let highScore = Number(localStorage.getItem("highScore"))
+        console.log(highScore)
+
+        document.addEventListener('keydown', e => handleKeyDown(e.code))
+
+        placeApple()
+        setScore()
+        move()
+        
+        function playAgainClick() {
+            location.reload()
+        }
+
+        function move() {
+            let oldBody = clone(body)
+            let head = body[0]
+
+            changeCellColour(body[body.length-1], 'black')
+            changeCellColour(positionOfApple, 'black')
+
+            if (direction == 1) {
+                head.y = head.y + 1
+                if (head.y > 20) return lose()
+            }
+            if (direction == 2) {
+                head.y = head.y - 1
+                if (head.y < 0) return lose()
+            }
+            if (direction == 3) {
+                head.x = head.x - 1
+                if (head.x < 0) return lose()
+            }
+            if (direction == 4) {
+                head.x = head.x + 1
+                if (head.x > 20) return lose()
+            }
+
+            for (let i = 1; i<body.length; i++) {
+              if (head.x == body[i].x && head.y == body[i].y) return lose()
+            }
+            
+            for (let i = 1; i<body.length; i++) {
+                body[i] = oldBody[i-1]
+            }
+
+            if (extraBodies > 0) {
+                body.push(newBodyPosition)
+                extraBodies--
+                setScore()
+            }
+            
+            if (positionOfApple.x == head.x && positionOfApple.y == head.y) {
+              extraBodies = 4
+              newBodyPosition = positionOfApple
+              placeApple()
+            }
+
+            changeCellColour(positionOfApple, 'red')
+
+            for (let i = 0; i < body.length; i++ ) {
+                changeCellColour(body[i], 'rgb(79, 209, 79)')
+            }
+
+            setTimeout(move, 125)
+        }
+        
+        function setScore() {
+            let scoreDiv = document.getElementById('score')
+            let score = body.length
+            scoreDiv.innerHTML = score
+            if (score > highScore) {
+                highScore = score
+                localStorage.setItem("highScore", highScore);
+            }
+            let highScoreDiv = document.getElementById('highScore')
+            highScoreDiv.innerHTML = highScore 
+        }
+
+        function changeCellColour(cell, color) {
+            let element = document.getElementById('cell' + cell.x + ',' + cell.y)
+            element.style.backgroundColor = color
+        }
+
+        function placeApple() {
+            positionOfApple = { x: getRandomInt(21), y: getRandomInt(21) }
+        }
+ 
+        function handleKeyDown(key) {
+        
+          if ((key == 'ArrowUp' || key == 'KeyW') && direction != 2) {
+            direction = 1
+          }
+          if ((key == 'ArrowDown' || key == 'KeyS') && direction != 1) {
+            direction = 2
+          }
+          if ((key == 'ArrowLeft' || key == 'KeyA') && direction != 4) {
+            direction = 3
+          }
+          if ((key == 'ArrowRight' || key == 'KeyD') && direction != 3) {
+            direction = 4
+          }
+        }
+
+        function lose() {
+            let gameOver = document.getElementsByClassName('lose')[0]
+            gameOver.style.display = 'block'
+        }
+
+        function getRandomInt(max) {
+            return Math.floor(Math.random() * max);
+        }
+
+        function clone(o) {
+            return JSON.parse(JSON.stringify(o))
+        }
+    </script>
+</html>
