@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <style>
+    canvas {
+      border: 1px solid black;
+    }
+    body {
+      margin: 0;
+      overflow:hidden;
+    }
+  </style>
+</head>
+
+<body>
+<canvas id="coinCanvas"></canvas>
+  <script>
+    const canvas = document.getElementById("coinCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Create an array to hold the coins
+    const coins = [];
+
+    // Function to create a new coin
+    function createCoin() {
+      const coin = {
+        x: Math.random() * canvas.width,
+        y: 0,
+        dx: 0,
+        radius: 10, // Adjust the radius as needed
+        speed: Math.random(), // Adjust the speed as needed
+        color: Math.floor(Math.random() * 255),
+
+
+      };
+      coins.push(coin);
+    }
+
+    // Function to update the coin positions
+    function updateCoins() {
+      for (let i = 0; i < coins.length; i++) {
+        const coin = coins[i];
+        coin.y += coin.speed;
+        coin.speed += 0.1;
+        coin.x = coin.x + coin.dx;
+
+        // Remove coins that have fallen off the canvas
+        if (coin.y > canvas.height - coin.radius) {
+          coin.speed = -coin.speed
+          coin.dx = Math.random() * 6 - 3 
+          // coins.splice(i, 1);
+          // i--;
+        }
+        if (coin.x < 0 || coin.x > canvas.width) {
+          coin.dx = -coin.dx
+        }
+      }
+    }
+
+    // Function to draw the coins
+    function drawCoins() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      for (const coin of coins) {
+        ctx.fillStyle = `hsla(${coin.color},100%,50%,1.0)`;//"gold"; // Coin color
+        ctx.beginPath();
+        ctx.arc(coin.x, coin.y, coin.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.closePath();
+      }
+    }
+
+    // Main animation loop
+    function animate() {
+      const now = performance.now()
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
+      createCoin();
+      updateCoins();
+      drawCoins();
+      console.log(performance.now() - now)
+      requestAnimationFrame(animate);
+    }
+
+    // Start the animation
+    animate();
+  </script>
+</body>
+
+</html>
