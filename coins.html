@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <style>
+    canvas {
+      border: 1px solid black;
+    }
+    body {
+      margin: 0;
+      overflow:hidden;
+    }
+  </style>
+</head>
+
+<body>
+<canvas id="coinCanvas"></canvas>
+  <script>
+    const canvas = document.getElementById("coinCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Create an array to hold the coins
+    const coins = [];
+
+    // Function to create a new coin
+    function createCoin() {
+      const coin = {
+        x: Math.random() * canvas.width,
+        y: 0,
+        radius: 10, // Adjust the radius as needed
+        speed: Math.random() * 3 + 1 // Adjust the speed as needed
+      };
+      coins.push(coin);
+    }
+
+    // Function to update the coin positions
+    function updateCoins() {
+      for (let i = 0; i < coins.length; i++) {
+        const coin = coins[i];
+        coin.y += coin.speed;
+
+        // Remove coins that have fallen off the canvas
+        if (coin.y > canvas.height + coin.radius) {
+          coins.splice(i, 1);
+          i--;
+        }
+      }
+    }
+
+    // Function to draw the coins
+    function drawCoins() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "gold"; // Coin color
+
+      for (const coin of coins) {
+        ctx.beginPath();
+        ctx.arc(coin.x, coin.y, coin.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.closePath();
+      }
+    }
+
+    // Main animation loop
+    function animate() {
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
+      createCoin();
+      updateCoins();
+      drawCoins();
+      requestAnimationFrame(animate);
+    }
+
+    // Start the animation
+    animate();
+  </script>
+</body>
+
+</html>
