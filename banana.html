@@ -4,25 +4,11 @@
 	<meta name="robots" content="noindex">
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<style>
-	body {
-		font-family: arial;
-		width: 100%;
-		background-color: #000;
-		color: #fff;
-		margin:0;
-	}
-</style>
 </head>
-<body onclick="window.location.reload();">
-  <div id="info"></div>
-
+<body>
+  <p>Loaded</p>
   <script>
-			var infoElem = document.getElementById("info");
-      var info = "";
-      info += document.cookie;
-      info += "<br />";
-			infoElem.innerHTML = info;
-	</script>
+    console.log(document.cookie)
+  </script>
 </body>
 </html>
