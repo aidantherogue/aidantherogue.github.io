@@ -38,7 +38,7 @@
 	
 	#raw {
 		font-size: 100px;
-		margin-top: 200px
+		margin-top: 220px;
 	}
 	
 	#dateContainer {
@@ -63,7 +63,7 @@
 	
 	#seconds {
 		position:absolute;
-		top:297px;
+		bottom:2px;
 		left:0;
 		font-size: 25px;
 	}
@@ -201,7 +201,7 @@
 							rawText = rawText + times[i].getHours() + ':' + forecasts[i] + '<br />'
 						}
 						tempDiv.innerHTML = Math.round(nowTemp) + ':' + Math.round(maxTemp);//'<sup>o</sup>C'
-						rawDiv.innerHTML = rawText
+						rawDiv.innerHTML = rawText + window.innerHeight
 					});
 				}
 			}
