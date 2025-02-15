@@ -167,7 +167,7 @@
 				var rawText = ''
 				if (!(hours < 7 || hours > 22)) {
 					console.log('Getting weather data')
-					$.getJSON('http://api.open-meteo.com/v1/forecast?latitude=55.9521&longitude=-3.1965&hourly=temperature_2m&timezone=Europe%2FLondon&forecast_days=3',
+					$.getJSON('https://api.open-meteo.com/v1/forecast?latitude=55.9521&longitude=-3.1965&hourly=temperature_2m&timezone=Europe%2FLondon&forecast_days=3',
 					function(data) {
 						const hourly = []
 						for (var i = 0; i < data.hourly.time.length; i++) {
