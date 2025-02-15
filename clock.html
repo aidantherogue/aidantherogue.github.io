@@ -15,15 +15,15 @@
 		margin:0;
 	}
 	.time {
-		margin: -41px 0 -40px -17px;
+		margin: -35px 0 -40px 50px;
 	}
 	.time.night {
 		color: gray
 	}
-	.wide {
+	/* .wide {
 		font-size: 250px;
 		margin: -47px 0 -40px -7px;
-	}
+	} */
 	
 	#temp {
 		position: absolute;
@@ -142,13 +142,13 @@
 				secondsClassName += ' night ';
 			}
 			
-			if (hours12 < 10) {
-				timeClassName += ' wide '
-			}
+			// if (hours12 < 10) {
+			// 	timeClassName += ' wide '
+			// }
 
-			if (hours >= 10 && minutes >= 10 && day >= 10 && month >= 10) {
-				dateClassName += ' small ';
-			}
+			// if (hours >= 10 && minutes >= 10 && day >= 10 && month >= 10) {
+			// 	dateClassName += ' small ';
+			// }
 			
 			timeDiv.className = timeClassName;
 			var dateContainerDiv = document.getElementById("dateContainer");
@@ -201,7 +201,7 @@
 							rawText = rawText + times[i].getHours() + ':' + forecasts[i] + '<br />'
 						}
 						tempDiv.innerHTML = Math.round(nowTemp) + ':' + Math.round(maxTemp);//'<sup>o</sup>C'
-						rawDiv.innerHTML = rawText + window.innerHeight
+						rawDiv.innerHTML = rawText + 'W' + window.innerWidth + ':H' + window.innerHeight 
 					});
 				}
 			}
