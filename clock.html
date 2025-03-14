@@ -15,7 +15,7 @@
 		margin:0;
 	}
 	.time {
-		margin: -35px 0 -40px 50px;
+		margin: -35px 0 -40px 100px;
 	}
 	.time.night {
 		color: gray
@@ -191,16 +191,14 @@
 						
 						var dayMinutes = minutes + hours * 60;
 
-						var maxTemp = max(forecasts);
-						var minTemp = min(forecasts);
-						if (maxTemp <= nowTemp) {
-							maxTemp = minTemp;
-						}
+						var {max: maxTemp, time: maxTime} = max(forecasts);
+						var {min: minTemp, time: minTime} = min(forecasts);
+						const temp = maxTime < minTime ? maxTemp : minTemp
 						
 						for (var i = 0; i< forecasts.length; i++) {
 							rawText = rawText + times[i].getHours() + ':' + forecasts[i] + '<br />'
 						}
-						tempDiv.innerHTML = Math.round(nowTemp) + ':' + Math.round(maxTemp);//'<sup>o</sup>C'
+						tempDiv.innerHTML = Math.round(nowTemp) + ':' + Math.round(temp);//'<sup>o</sup>C'
 						rawDiv.innerHTML = rawText + 'W' + window.innerWidth + ':H' + window.innerHeight 
 					});
 				}
@@ -209,18 +207,26 @@
 
 		function max(arr) {
 			var max = 0
+			var time = 0
 			for (var i = 0; i < arr.length; i++) {
-				if (arr[i] > max) max = arr[i]
+				if (arr[i] > max) {
+					max = arr[i]
+					time = i
+				}
 			}
-			return max
+			return {max, time}
 		}
 
 		function min(arr) {
 			var min = 99
+			var time = 0
 			for (var i = 0; i < arr.length; i++) {
-				if (arr[i] < min) min = arr[i]
+				if (arr[i] < min) {
+					min = arr[i]
+					time = i
+				}
 			}
-			return min
+			return {min, time}
 		}
 
 		//	'https://query.yahooapis.com/v1/public/yql?q=select%20item.condition%20from%20weather.forecast%20where%20woeid%20%3D%2019344%20and%20u=%27c%27&format=json&callback=cbcallback&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys'
