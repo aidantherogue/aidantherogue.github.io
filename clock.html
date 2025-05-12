@@ -75,13 +75,13 @@
   #bottomright {
     position:absolute;
     top: 300px;
-    left: 800px;
+    left: 500px;
     font-size: 10px;
   }
 </style>
 </head>
 <body onclick="window.location.reload();">
-  <div id="bottomright">|........................</div>
+  <div id="bottomright">|........................|........................|........................|........................|........................</div>
 	<div id="time">
 		12:34
 	</div>
@@ -193,9 +193,9 @@
 							}
 						}
 
-						nowTemp = temperatures[nowIndex];
+						nowTemp = Math.round(temperatures[nowIndex]);
 						var times = hourly.slice(nowIndex, 37)
-						var forecasts = temperatures.slice(nowIndex, 37)
+						var forecasts = temperatures.slice(nowIndex, 37).map(x => Math.round(x))
 						
 						var dayMinutes = minutes + hours * 60;
 
@@ -206,7 +206,7 @@
 						for (var i = 0; i< forecasts.length; i++) {
 							rawText = rawText + times[i].getHours() + ':' + forecasts[i] + '<br />'
 						}
-						tempDiv.innerHTML = Math.round(nowTemp) + ':' + Math.round(temp);//'<sup>o</sup>C'
+						tempDiv.innerHTML = nowTemp + ':' + temp;//'<sup>o</sup>C'
 						rawDiv.innerHTML = rawText + 'W' + window.innerWidth + ':H' + window.innerHeight 
 					});
 				}
