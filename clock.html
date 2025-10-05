@@ -15,7 +15,7 @@
 		margin:0;
 	}
 	.time {
-		margin: -35px 0 -40px 100px;
+		margin: -25px 0 -40px 100px;
 	}
 	.time.night {
 		color: gray
@@ -207,7 +207,7 @@
 							rawText = rawText + times[i].getHours() + ':' + forecasts[i] + '<br />'
 						}
 						tempDiv.innerHTML = nowTemp + ':' + temp;//'<sup>o</sup>C'
-						rawDiv.innerHTML = rawText + 'W' + window.innerWidth + ':H' + window.innerHeight 
+						rawDiv.innerHTML = "<br /><br /><br /><br />" + rawText + 'W' + window.innerWidth + ':H' + window.innerHeight 
 					});
 				}
 			}
