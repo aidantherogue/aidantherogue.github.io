@@ -51,7 +51,7 @@
         position: absolute;
         left: 0;
         bottom: 0;
-		font-size:60px;
+		font-size: 50px;
     }
 
     #dayOfTheWeek.night {
@@ -83,6 +83,17 @@
 		display: none;
 	}
 
+    #wind {
+		position:absolute;
+		bottom:0;
+		right:0;
+		font-size: 50px;
+	}
+
+	#wind.night {
+		display: none;
+	}
+
   #bottomright {
     position:absolute;
     top: 370px;
@@ -101,6 +112,7 @@
 		<span id='temp'></span>
 	</div>
     <div id="dayOfTheWeek"></div>
+    <div id="wind"></div>
 	
 	<div id='seconds'>............................................................</div>	
 	<div id='raw' />
@@ -125,6 +137,7 @@
 			var dateClassName = 'date ';
 			var secondsClassName = 'seconds ';
 			var dayOfTheWeekClassName = ' ';
+			var windClassName = ' ';
 												
 			if (hours == 12 && minutes == 7 && seconds < 5 && !window.location.search.includes('nr=1')) {
 				reload = true;
@@ -150,12 +163,12 @@
 			//if (day == 1 || day == 21 || day == 31) dateSuffix = "st";
 			//if (day == 2 || day == 22) dateSuffix = "nd";
 			//var dateText = day + '<sup style="font-size:50px">' + dateSuffix + '</sup>';// + ' ' + month
-                var dateText = day + '/' + month;
+            var dateText = day + '/' + month;
 			var dateDiv = document.getElementById("date");
 			dateDiv.innerHTML = dateText;
             var dayOfTheWeekDiv = document.getElementById('dayOfTheWeek');
 			dayOfTheWeekDiv.innerHTML = days[dayOfTheWeek];
-
+            var windDiv = document.getElementById('wind');
 			
 			var secondsText = '&nbsp;';
 			for (var i = 0; i<seconds; i++) secondsText += '.';
@@ -168,6 +181,7 @@
 				dateClassName += ' night ';
 				secondsClassName += ' night ';
 			    dayOfTheWeekClassName += ' night ';
+			    windClassName += ' night ';
 			}
 			
 			// if (hours12 < 10) {
@@ -183,6 +197,7 @@
 			dateContainerDiv.className = dateClassName;				
 			secondsDiv.className = secondsClassName;
 			dayOfTheWeekDiv.className = dayOfTheWeekClassName;
+			windDiv.className = windClassName;
 		}
 
 		function setWeather(immediate) {
@@ -197,7 +212,7 @@
 				var rawText = ''
 				if (!(hours < 7 || hours > 22)) {
 					console.log('Getting weather data')
-					$.getJSON('https://api.open-meteo.com/v1/forecast?latitude=55.9521&longitude=-3.1965&hourly=temperature_2m&timezone=Europe%2FLondon&forecast_days=3',
+					$.getJSON('https://api.open-meteo.com/v1/forecast?latitude=55.9521&longitude=-3.1965&hourly=temperature_2m&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=Europe%2FLondon&forecast_days=3&wind_speed_unit=mph',
 					function(data) {
 						const hourly = []
 						for (var i = 0; i < data.hourly.time.length; i++) {
@@ -228,10 +243,64 @@
 						}
 						tempDiv.innerHTML = nowTemp + ':' + temp;//'<sup>o</sup>C'
 						rawDiv.innerHTML = "<br /><br /><br /><br />" + rawText + 'W' + window.innerWidth + ':H' + window.innerHeight 
+                        
+                        var windDiv = document.getElementById('wind');
+                        windDiv.innerHTML = Math.round(data.current.wind_speed_10m) + degreesToArrow(data.current.wind_direction_10m) + '-' + Math.round(data.current.wind_gusts_10m);
 					});
 				}
 			}
 		}
+
+        function degreesToCompass(degrees) {
+            const directions = [
+                "N", "NNE", "NE", "ENE", 
+                "E", "ESE", "SE", "SSE",
+                "S", "SSW", "SW", "WSW", 
+                "W", "WNW", "NW", "NNW"
+            ];
+            
+            degrees = degrees % 360;
+            const index = Math.round((degrees + 11.25) / 22.5) % 16;
+            
+            return directions[index];
+        }       
+
+        function degreesToArrow(degrees) {
+            // Normalize degrees to 0-360 range
+            degrees = ((degrees % 360) + 360) % 360;
+            
+            // Define arrows for 8 directions (45° each)
+            // Starting from 0° (North/Up) and going clockwise
+            const arrows = [
+                "↑",   // 0° - North (up)
+                "↗",   // 45° - Northeast  
+                "→",   // 90° - East (right)
+                "↘",   // 135° - Southeast
+                "↓",   // 180° - South (down)
+                "↙",   // 225° - Southwest
+                "←",   // 270° - West (left)
+                "↖"    // 315° - Northwest
+            ];
+            
+            // Each direction covers 45 degrees (360/8)
+            // Add 22.5 to center the ranges (e.g., North is 337.5° to 22.5°)
+            const index = Math.round(degrees / 45) % 8;
+            
+            return arrows[index];
+        }
+
+        // Example usage:
+        console.log(degreesToArrow(0));    // ↑ (North)
+        console.log(degreesToArrow(340));  // ↑ (North)
+        console.log(degreesToArrow(20));   // ↑ (North)
+        console.log(degreesToArrow(45));   // ↗ (Northeast)
+        console.log(degreesToArrow(90));   // → (East)
+        console.log(degreesToArrow(135));  // ↘ (Southeast)
+        console.log(degreesToArrow(180));  // ↓ (South)
+        console.log(degreesToArrow(225));  // ↙ (Southwest)
+        console.log(degreesToArrow(270));  // ← (West)
+        console.log(degreesToArrow(315));  // ↖ (Northwest)
+        console.log(degreesToArrow(360));  // ↑ (North, same as 0°)
 
         function nullWrapper(o) {
             return o || {value: 0, start: 99};
