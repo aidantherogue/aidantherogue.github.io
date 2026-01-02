@@ -183,7 +183,11 @@
 			    dayOfTheWeekClassName += ' night ';
 			    windClassName += ' night ';
 			}
-			
+			if (window.innerHeight<370)
+            {
+			    dayOfTheWeekClassName += ' night ';
+			    windClassName += ' night ';
+			}
 			// if (hours12 < 10) {
 			// 	timeClassName += ' wide '
 			// }
@@ -245,7 +249,7 @@
 						rawDiv.innerHTML = "<br /><br /><br /><br />" + rawText + 'W' + window.innerWidth + ':H' + window.innerHeight 
                         
                         var windDiv = document.getElementById('wind');
-                        windDiv.innerHTML = Math.round(data.current.wind_speed_10m) + degreesToArrow(data.current.wind_direction_10m) + '-' + Math.round(data.current.wind_gusts_10m);
+                        windDiv.innerHTML = Math.round(data.current.wind_speed_10m) + windDirectionToArrow(data.current.wind_direction_10m) + degreesToCompass(data.current.wind_direction_10m) + ' ' + Math.round(data.current.wind_gusts_10m);
 					});
 				}
 			}
@@ -265,21 +269,21 @@
             return directions[index];
         }       
 
-        function degreesToArrow(degrees) {
+        function windDirectionToArrow(degrees) {
             // Normalize degrees to 0-360 range
             degrees = ((degrees % 360) + 360) % 360;
             
             // Define arrows for 8 directions (45° each)
             // Starting from 0° (North/Up) and going clockwise
             const arrows = [
+                "↓",   // 180° - South (down)
+                "↙",   // 225° - Southwest
+                "←",   // 270° - West (left)
+                "↖",    // 315° - Northwest
                 "↑",   // 0° - North (up)
                 "↗",   // 45° - Northeast  
                 "→",   // 90° - East (right)
                 "↘",   // 135° - Southeast
-                "↓",   // 180° - South (down)
-                "↙",   // 225° - Southwest
-                "←",   // 270° - West (left)
-                "↖"    // 315° - Northwest
             ];
             
             // Each direction covers 45 degrees (360/8)
@@ -290,17 +294,17 @@
         }
 
         // Example usage:
-        console.log(degreesToArrow(0));    // ↑ (North)
-        console.log(degreesToArrow(340));  // ↑ (North)
-        console.log(degreesToArrow(20));   // ↑ (North)
-        console.log(degreesToArrow(45));   // ↗ (Northeast)
-        console.log(degreesToArrow(90));   // → (East)
-        console.log(degreesToArrow(135));  // ↘ (Southeast)
-        console.log(degreesToArrow(180));  // ↓ (South)
-        console.log(degreesToArrow(225));  // ↙ (Southwest)
-        console.log(degreesToArrow(270));  // ← (West)
-        console.log(degreesToArrow(315));  // ↖ (Northwest)
-        console.log(degreesToArrow(360));  // ↑ (North, same as 0°)
+        console.log(windDirectionToArrow(0));    // ↑ (North)
+        console.log(windDirectionToArrow(340));  // ↑ (North)
+        console.log(windDirectionToArrow(20));   // ↑ (North)
+        console.log(windDirectionToArrow(45));   // ↗ (Northeast)
+        console.log(windDirectionToArrow(90));   // → (East)
+        console.log(windDirectionToArrow(135));  // ↘ (Southeast)
+        console.log(windDirectionToArrow(180));  // ↓ (South)
+        console.log(windDirectionToArrow(225));  // ↙ (Southwest)
+        console.log(windDirectionToArrow(270));  // ← (West)
+        console.log(windDirectionToArrow(315));  // ↖ (Northwest)
+        console.log(windDirectionToArrow(360));  // ↑ (North, same as 0°)
 
         function nullWrapper(o) {
             return o || {value: 0, start: 99};
