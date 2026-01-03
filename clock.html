@@ -14,23 +14,22 @@
 		color: #fff;
 		margin:0;
 	}
+
 	#time {
-		margin: -25px 0 -40px 100px;
+		position: absolute; 
+		top: -30px;
+		left: 80px;
 	}
+
 	#time.night {
 		color: gray
 	}
-	/* .wide {
-		font-size: 250px;
-		margin: -47px 0 -40px -7px;
-	} */
 	
 	#temp {
 		position: absolute;
 		top: 195px;
 		right: 0;
 		font-size: 110px;
-		/* background-color: black; */
 	}
 	
 	.reload {
@@ -44,12 +43,6 @@
 		left: 0;
 	}
 	
-	/* #nightContainer {
-		font-size:120px;
-		margin: 10px 0 0 0;
-		position: relative;
-	} */
-
     #dayOfTheWeek {
         position: absolute;
         left: 0;
@@ -57,14 +50,6 @@
 		font-size: 50px;
     }
 
-    /* #dayOfTheWeek.night {
-        display: none;
-    } */
-
-	/* #nightContainer.small {
-		font-size: 90px;
-	} */
-	
 	#nightContainer.night {
 		display: none;
 	}
@@ -83,20 +68,12 @@
 		font-size: 25px;
 	}
 
-	/* #seconds.night {
-		display: none;
-	} */
-
     #wind {
 		position:absolute;
 		top:320px;
 		right:0;
 		font-size: 50px;
 	}
-
-	/* #wind.night {
-		display: none;
-	} */
 
   #bottomright {
     position:absolute;
@@ -137,11 +114,7 @@
 			var seconds = date.getSeconds();
             var dayOfTheWeek = date.getDay();
 			var timeClassName = ' ';
-			// var dateClassName = 'date ';
-			// var secondsClassName = 'seconds ';
 			var nightContainerClassName = ' ';
-			// var dayOfTheWeekClassName = ' ';
-			// var windClassName = ' ';
 												
 			if (hours == 12 && minutes == 7 && seconds < 5 && !window.location.search.includes('nr=1')) {
 				reload = true;
@@ -163,10 +136,6 @@
 
 			var day = date.getDate();
 			var month = date.getMonth()+1;
-			//var dateSuffix = 'th';
-			//if (day == 1 || day == 21 || day == 31) dateSuffix = "st";
-			//if (day == 2 || day == 22) dateSuffix = "nd";
-			//var dateText = day + '<sup style="font-size:50px">' + dateSuffix + '</sup>';// + ' ' + month
             var dateText = day + '/' + month;
 			var dateDiv = document.getElementById("date");
 			dateDiv.innerHTML = dateText;
@@ -179,20 +148,11 @@
 			var secondsDiv = document.getElementById('seconds');
 			secondsDiv.innerHTML = secondsText;
 			
-			if (hours < 7 || hours > 22)
+			if (hours < 7 || hours > 22 && false)
             {
 				timeClassName += ' night ';
 				nightContainerClassName += ' night ';
 			}
-
-			// if (window.innerHeight<370)
-            // {
-			//     dayOfTheWeekClassName += ' night ';
-			//     windClassName += ' night ';
-			// }
-			// if (hours12 < 10) {
-			// 	timeClassName += ' wide '
-			// }
 
 			// if (hours >= 10 && minutes >= 10 && day >= 10 && month >= 10) {
 			// 	dateClassName += ' small ';
@@ -201,9 +161,6 @@
 			timeDiv.className = timeClassName;
 			var nightContainerDiv = document.getElementById("nightContainer");
 			nightContainerDiv.className = nightContainerClassName;				
-			// secondsDiv.className = secondsClassName;
-			// dayOfTheWeekDiv.className = dayOfTheWeekClassName;
-			// windDiv.className = windClassName;
 		}
 
 		function setWeather(immediate) {
@@ -216,7 +173,7 @@
 				var rawDiv = document.getElementById("raw");
 				rawDiv.innerHTML = '';
 				var rawText = ''
-				if (!(hours < 7 || hours > 22)) {
+				if (!(hours < 7 || hours > 22) || true) {
 					console.log('Getting weather data')
 					$.getJSON('https://api.open-meteo.com/v1/forecast?latitude=55.9521&longitude=-3.1965&hourly=temperature_2m&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=Europe%2FLondon&forecast_days=3&wind_speed_unit=mph',
 					function(data) {
