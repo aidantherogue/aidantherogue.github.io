@@ -33,7 +33,7 @@
 	#temp {
 		position: absolute;
 		top: 195px;
-		right: 0;
+		left: 0;
 		font-size: 110px;
 	}
 	
@@ -95,9 +95,10 @@
 
 	#tempGraph {
 		position: absolute;
-		top: 195px;
-		left: 0;
+		top: 215px;
+		left: 272px;
 		font-size: 50px;
+		height:100px;
 	}
 
 	#tempGraph .value {
@@ -230,6 +231,7 @@
 						nowTemp = Math.round(temperatures[nowIndex]);
 						var times = hourly.slice(nowIndex, 37)
 						var forecasts = temperatures.slice(nowIndex, 37).map(x => Math.round(x))
+						var futureTemps = temperatures.slice(nowIndex)
 						
 						var dayMinutes = minutes + hours * 60;
 						var {value: maxTemp, start: maxTime} = nullWrapper(findFirstPeakRange(forecasts));
@@ -245,14 +247,13 @@
                         var windDiv = document.getElementById('wind');
                         windDiv.innerHTML = Math.round(data.current.wind_speed_10m) + windDirectionToArrow(data.current.wind_direction_10m) + degreesToCompass(data.current.wind_direction_10m) + ' ' + Math.round(data.current.wind_gusts_10m);
 
-						console.log(forecasts, times, min(forecasts), max(forecasts));
-						const tempMin = min(forecasts).min
-						const tempMax = max(forecasts).max
+						const tempMin = min(futureTemps).min
+						const tempMax = max(futureTemps).max
 						const tempDiff = tempMax - tempMin
-						const points = forecasts.map(point => mapRange(point, tempMin, tempMax, 0, 100))
+						const points = futureTemps.map(point => mapRange(point, tempMin, tempMax, 0, tempDiff<10?tempDiff*10:100)).map(point=>Math.round(point))
 
 						var tempGraphDiv = document.getElementById("tempGraph");
-						tempGraphText = points.map((point,i) => '<div class="value" style="left:'+i*14+'px;top:'+point+'px">-</div>').join('');
+						tempGraphText = points.map((point,i) => '<div class="value" style="left:'+i*14+'px;bottom:'+point+'px">-</div>').join('');
 						console.log(tempGraphText);
 						tempGraphDiv.innerHTML = tempGraphText;
 
