@@ -18,6 +18,433 @@
 	#time {
 		position: absolute; 
 		top: -30px;
+		left: 0;
+		font-size: 200px;
+	}
+
+	#time.night {
+		color: gray;
+		font-size: 250px;
+		width: 100%;
+    	text-align: center;
+		left: -10px;
+	}
+	
+	#temp {
+		position: absolute;
+		top: 195px;
+		left: 0;
+		font-size: 110px;
+	}
+	
+	.reload {
+		color: red;
+	}
+	
+	#raw {
+		position: absolute;
+		font-size: 15px; 
+		top:400px;
+		left: 0;
+	}
+	
+    #dayOfTheWeek {
+        position: absolute;
+        right: 0;
+        top: 00px;
+		font-size: 40px;
+		width: 120px;
+    	text-align: center;
+    }
+
+	#nightContainer.night {
+		display: none;
+	}
+	
+	#date {
+		position:absolute;
+		top: 30px;
+		right: 0;
+		font-size: 105px;
+		width: 120px;
+    	text-align: center;
+	}
+
+	#month {
+		position:absolute;
+		top: 130px;
+		right: 0;
+		font-size: 40px;
+		width: 120px;
+    	text-align: center;
+	}
+	
+	#seconds {
+		position:absolute;
+		bottom: -5px;
+		left:0;
+		font-size: 25px;
+	}
+
+    #wind {
+		position:absolute;
+		top:320px;
+		right:0;
+		font-size: 50px;
+	}
+
+	#tempGraph {
+		position: absolute;
+		top: 215px;
+		left: 272px;
+		font-size: 50px;
+		height:100px;
+	}
+
+	#tempGraph .value {
+		position: absolute;
+	}
+
+  #bottomright {
+    position:absolute;
+    top: 375px;
+    left: 662px;
+    font-size: 10px;
+  }
+</style>
+</head>
+<body onclick="window.location.reload();">
+	<div id="bottomright">.</div>
+	<div id="time">
+		12:34
+	</div>
+	<div id="nightContainer">
+		<span id='date'>30</span>
+		<span id='month'>Feb</span>
+		<span id='temp'></span>
+		<div id="dayOfTheWeek"></div>
+		<div id="wind"></div>
+		<div id='seconds'>............................................................</div>	
+		<div id='tempGraph'></div>
+	</div>
+	<div id='raw'></div>
+	
+	<script>
+		var counter = 0;
+		var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        var daysShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat'];
+		var reload = false;
+		setTime();
+		setWeather(true);
+		setInterval(setTime, 1000);
+		setInterval(setWeather, 59000);
+		
+		function setTime() {
+			var date = new Date();
+			var hours = date.getHours();
+			var minutes = date.getMinutes();
+			var seconds = date.getSeconds();
+            var dayOfTheWeek = date.getDay();
+			var timeClassName = ' ';
+			var nightContainerClassName = ' ';
+												
+			if (hours == 12 && minutes == 7 && seconds < 5 && !window.location.search.includes('nr=1')) {
+				reload = true;
+				if (!window.timeout)
+					window.timeout = setTimeout(function() {window.location.reload();},10000);
+			}
+				
+			if (reload)
+				timeClassName += "reload ";
+				
+			var hours12 = hours;	
+			if (hours12 > 12) hours12 -= 12;
+			if (hours12 == 0) hours12 = 12;
+			
+			if (minutes < 10) minutes = '0' + minutes;
+			var time = hours12 + ':' + minutes;
+			var timeDiv = document.getElementById("time");
+			timeDiv.innerHTML = time;
+			if (hours12 > 9) {
+				timeDiv.style.left = '-20px'
+			}
+
+			var day = date.getDate();
+			var month = date.getMonth();
+            var dateText = '2' + day;
+			var dateDiv = document.getElementById("date");
+			var monthDiv = document.getElementById("month");
+			dateDiv.innerHTML = dateText;
+			monthDiv.innerHTML = months[month];
+            var dayOfTheWeekDiv = document.getElementById('dayOfTheWeek');
+			dayOfTheWeekDiv.innerHTML = daysShort[dayOfTheWeek];
+            var windDiv = document.getElementById('wind');
+			
+			var secondsText = '';
+			for (var i = 0; i<seconds; i++) secondsText += '.';
+			var secondsDiv = document.getElementById('seconds');
+			secondsDiv.innerHTML = secondsText;
+			
+			if (hours < 7 || hours > 22)
+            {
+				timeClassName += ' night ';
+				nightContainerClassName += ' night ';
+			}
+
+			// if (hours >= 10 && minutes >= 10 && day >= 10 && month >= 10) {
+			// 	dateClassName += ' small ';
+			// }
+			
+			timeDiv.className = timeClassName;
+			var nightContainerDiv = document.getElementById("nightContainer");
+			nightContainerDiv.className = nightContainerClassName;				
+		}
+
+		function setWeather(immediate) {
+			var date = new Date();
+			var minutes = date.getMinutes();
+			var hours = date.getHours();
+			if (minutes == 0 || immediate) {
+				var tempDiv = document.getElementById("temp");
+				tempDiv.innerHTML = '';
+				var rawDiv = document.getElementById("raw");
+				rawDiv.innerHTML = '';
+				var rawText = ''
+				if (!(hours < 7 || hours > 22) || true) {
+					console.log('Getting weather data')
+					$.getJSON('https://api.open-meteo.com/v1/forecast?latitude=55.9521&longitude=-3.1965&hourly=temperature_2m&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=Europe%2FLondon&forecast_days=3&wind_speed_unit=mph',
+					function(data) {
+						window.data = data
+						const hourly = []
+						for (var i = 0; i < data.hourly.time.length; i++) {
+							hourly[i] = new Date(data.hourly.time[i])
+						}
+						var temperatures = data.hourly.temperature_2m;
+
+						var nowIndex = 0
+						var now = new Date()
+						for (var i = 0; i < hourly.length; i++) {
+							if (hourly[i] > now) {
+								nowIndex = i;
+								break;
+							}
+						}
+
+						nowTemp = Math.round(temperatures[nowIndex]);
+						var times = hourly.slice(nowIndex, 37)
+						var forecasts = temperatures.slice(nowIndex, 37).map(x => Math.round(x))
+						var futureTemps = temperatures.slice(nowIndex)
+						
+						var dayMinutes = minutes + hours * 60;
+						var {value: maxTemp, start: maxTime} = nullWrapper(findFirstPeakRange(forecasts));
+						var {value: minTemp, start: minTime} = nullWrapper(findFirstTroughRange(forecasts));
+						const temp = maxTime < minTime ? maxTemp : minTemp
+						
+						for (var i = 0; i < forecasts.length; i++) {
+							rawText = rawText + times[i].getHours() + ':' + forecasts[i] + '<br />'
+						}
+						tempDiv.innerHTML = nowTemp + ':' + temp;//'<sup>o</sup>C'
+						rawDiv.innerHTML = "<br /><br /><br /><br />" + rawText + 'W' + window.innerWidth + ':H' + window.innerHeight + '<br /><pre>' + JSON.stringify(data,null,2) + '</pre>'//.replace(/\n/g,'<br />')
+                        
+                        var windDiv = document.getElementById('wind');
+                        windDiv.innerHTML = Math.round(data.current.wind_speed_10m) + windDirectionToArrow(data.current.wind_direction_10m) + degreesToCompass(data.current.wind_direction_10m) + ' ' + Math.round(data.current.wind_gusts_10m);
+
+						const tempMin = min(futureTemps).min
+						const tempMax = max(futureTemps).max
+						const tempDiff = tempMax - tempMin
+						const points = futureTemps.map(point => mapRange(point, tempMin, tempMax, 0, tempDiff<10?tempDiff*10:100)).map(point=>Math.round(point))
+
+						var tempGraphDiv = document.getElementById("tempGraph");
+						tempGraphText = points.map((point,i) => '<div class="value" style="left:'+i*14+'px;bottom:'+point+'px">-</div>').join('');
+						console.log(tempGraphText);
+						tempGraphDiv.innerHTML = tempGraphText;
+
+
+						
+					});
+				}
+			}
+		}
+
+		const mapRange = (value, fromMin, fromMax, toMin, toMax) => {
+			return toMin + ((value - fromMin) / (fromMax - fromMin)) * (toMax - toMin);
+		};
+
+        function degreesToCompass(degrees) {
+            const directions = [
+                "N", "NNE", "NE", "ENE", 
+                "E", "ESE", "SE", "SSE",
+                "S", "SSW", "SW", "WSW", 
+                "W", "WNW", "NW", "NNW"
+            ];
+            
+            degrees = degrees % 360;
+            const index = Math.round((degrees + 11.25) / 22.5) % 16;
+            
+            return directions[index];
+        }       
+
+        function windDirectionToArrow(degrees) {
+            // Normalize degrees to 0-360 range
+            degrees = ((degrees % 360) + 360) % 360;
+            
+            // Define arrows for 8 directions (45° each)
+            // Starting from 0° (North/Up) and going clockwise
+            const arrows = [
+                "↓",   // 180° - South (down)
+                "↙",   // 225° - Southwest
+                "←",   // 270° - West (left)
+                "↖",    // 315° - Northwest
+                "↑",   // 0° - North (up)
+                "↗",   // 45° - Northeast  
+                "→",   // 90° - East (right)
+                "↘",   // 135° - Southeast
+            ];
+            
+            // Each direction covers 45 degrees (360/8)
+            // Add 22.5 to center the ranges (e.g., North is 337.5° to 22.5°)
+            const index = Math.round(degrees / 45) % 8;
+            
+            return arrows[index];
+        }
+
+        // Example usage:
+        console.log(windDirectionToArrow(0));    // ↑ (North)
+        console.log(windDirectionToArrow(340));  // ↑ (North)
+        console.log(windDirectionToArrow(20));   // ↑ (North)
+        console.log(windDirectionToArrow(45));   // ↗ (Northeast)
+        console.log(windDirectionToArrow(90));   // → (East)
+        console.log(windDirectionToArrow(135));  // ↘ (Southeast)
+        console.log(windDirectionToArrow(180));  // ↓ (South)
+        console.log(windDirectionToArrow(225));  // ↙ (Southwest)
+        console.log(windDirectionToArrow(270));  // ← (West)
+        console.log(windDirectionToArrow(315));  // ↖ (Northwest)
+        console.log(windDirectionToArrow(360));  // ↑ (North, same as 0°)
+
+        function nullWrapper(o) {
+            return o || {value: 0, start: 99};
+        }
+
+		function max(arr) {
+			var max = 0
+			var time = 0
+			for (var i = 0; i < arr.length; i++) {
+				if (arr[i] > max) {
+					max = arr[i]
+					time = i
+				}
+			}
+			return {max, time}
+		}
+
+		function min(arr) {
+			var min = 99
+			var time = 0
+			for (var i = 0; i < arr.length; i++) {
+				if (arr[i] < min) {
+					min = arr[i]
+					time = i
+				}
+			}
+			return {min, time}
+		}
+
+        // Alternative version that returns the range of the peak
+        function findFirstPeakRange(arr) {
+            if (!arr || arr.length < 3) {
+                return null;
+            }
+            
+            for (let i = 1; i < arr.length - 1; i++) {
+                if (arr[i] <= arr[i - 1]) {
+                    continue;
+                }
+                
+                let j = i;
+                while (j < arr.length - 1 && arr[j] === arr[j + 1]) {
+                    j++;
+                }
+                
+                if (j < arr.length - 1 && arr[j] > arr[j + 1]) {
+                    return { start: i, end: j, value: arr[i] };
+                }
+                
+                i = j;
+            }
+            
+            return null;
+        }
+
+        // Version that returns the range of the trough
+        function findFirstTroughRange(arr) {
+            if (!arr || arr.length < 3) {
+                return null;
+            }
+            
+            for (let i = 1; i < arr.length - 1; i++) {
+                if (arr[i] >= arr[i - 1]) {
+                    continue;
+                }
+                
+                let j = i;
+                while (j < arr.length - 1 && arr[j] === arr[j + 1]) {
+                    j++;
+                }
+                
+                if (j < arr.length - 1 && arr[j] < arr[j + 1]) {
+                    return { start: i, end: j, value: arr[i] };
+                }
+                
+                i = j;
+            }
+            
+            return null;
+        }
+
+        // Example usage:
+        const numbersPeak1 = [1, 3, 2, 4, 1, 5, 2];
+        const numbersPeak2 = [1, 2, 4, 4, 4, 1, 3, 2];
+        const numbersPeak3 = [1, 3, 3, 3, 2, 5, 1];
+
+        console.log(findFirstPeakRange(numbersPeak2)); // Output: {start: 2, end: 4, value: 4}
+        console.log(findFirstPeakRange(numbersPeak3)); // Output: {start: 1, end: 3, value: 3}
+
+        // Example usage:
+        const numbersTrough1 = [3, 1, 4, 2, 5, 1, 3];
+        const numbersTrough2 = [5, 3, 1, 1, 1, 4, 2, 6];
+        const numbersTrough3 = [4, 2, 2, 2, 5, 1, 3];
+
+        console.log(findFirstTroughRange(numbersTrough1)); // Output: {start: 1, end: 1, value: 1}
+        console.log(findFirstTroughRange(numbersTrough2)); // Output: {start: 2, end: 4, value: 1}
+        console.log(findFirstTroughRange(numbersTrough3)); // Output: {start: 1, end: 3, value: 2}
+
+
+        //	'https://query.yahooapis.com/v1/public/yql?q=select%20item.condition%20from%20weather.forecast%20where%20woeid%20%3D%2019344%20and%20u=%27c%27&format=json&callback=cbcallback&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys'
+                
+	</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta name="robots" content="noindex">
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<style>
+	body {
+		font-family: arial;
+		font-size: 200px;
+		width: 100%;
+		background-color: #000;
+		color: #fff;
+		margin:0;
+	}
+
+	#time {
+		position: absolute; 
+		top: -30px;
 		left: -10px;
 		font-size: 200px;
 	}
