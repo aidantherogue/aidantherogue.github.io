@@ -18,11 +18,16 @@
 	#time {
 		position: absolute; 
 		top: -30px;
-		left: 80px;
+		left: -10px;
+		font-size: 200px;
 	}
 
 	#time.night {
-		color: gray
+		color: gray;
+		font-size: 250px;
+		width: 100%;
+    	text-align: center;
+		left: -10px;
 	}
 	
 	#temp {
@@ -45,9 +50,11 @@
 	
     #dayOfTheWeek {
         position: absolute;
-        left: 0;
-        top: 320px;
-		font-size: 50px;
+        right: 0;
+        top: 00px;
+		font-size: 40px;
+		width: 120px;
+    	text-align: center;
     }
 
 	#nightContainer.night {
@@ -56,14 +63,25 @@
 	
 	#date {
 		position:absolute;
-		top: 195px;
-		left: 0;
-		font-size: 110px;
+		top: 30px;
+		right: 0;
+		font-size: 105px;
+		width: 120px;
+    	text-align: center;
+	}
+
+	#month {
+		position:absolute;
+		top: 130px;
+		right: 0;
+		font-size: 40px;
+		width: 120px;
+    	text-align: center;
 	}
 	
 	#seconds {
 		position:absolute;
-		bottom:0px;
+		bottom: -5px;
 		left:0;
 		font-size: 25px;
 	}
@@ -73,6 +91,17 @@
 		top:320px;
 		right:0;
 		font-size: 50px;
+	}
+
+	#tempGraph {
+		position: absolute;
+		top: 195px;
+		left: 0;
+		font-size: 50px;
+	}
+
+	#tempGraph .value {
+		position: absolute;
 	}
 
   #bottomright {
@@ -89,18 +118,21 @@
 		12:34
 	</div>
 	<div id="nightContainer">
-		<span id='date'>30 Feb</span>
+		<span id='date'>30</span>
+		<span id='month'>Feb</span>
 		<span id='temp'></span>
 		<div id="dayOfTheWeek"></div>
 		<div id="wind"></div>
 		<div id='seconds'>............................................................</div>	
+		<div id='tempGraph'></div>
 	</div>
 	<div id='raw'></div>
 	
 	<script>
 		var counter = 0;
-		var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+		var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        var daysShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat'];
 		var reload = false;
 		setTime();
 		setWeather(true);
@@ -135,20 +167,22 @@
 			timeDiv.innerHTML = time;
 
 			var day = date.getDate();
-			var month = date.getMonth()+1;
-            var dateText = day + '/' + month;
+			var month = date.getMonth();
+            var dateText = '2' + day;
 			var dateDiv = document.getElementById("date");
+			var monthDiv = document.getElementById("month");
 			dateDiv.innerHTML = dateText;
+			monthDiv.innerHTML = months[month];
             var dayOfTheWeekDiv = document.getElementById('dayOfTheWeek');
-			dayOfTheWeekDiv.innerHTML = days[dayOfTheWeek];
+			dayOfTheWeekDiv.innerHTML = daysShort[dayOfTheWeek];
             var windDiv = document.getElementById('wind');
 			
-			var secondsText = '&nbsp;';
+			var secondsText = '';
 			for (var i = 0; i<seconds; i++) secondsText += '.';
 			var secondsDiv = document.getElementById('seconds');
 			secondsDiv.innerHTML = secondsText;
 			
-			if (hours < 7 || hours > 22 && false)
+			if (hours < 7 || hours > 22)
             {
 				timeClassName += ' night ';
 				nightContainerClassName += ' night ';
@@ -202,7 +236,7 @@
 						var {value: minTemp, start: minTime} = nullWrapper(findFirstTroughRange(forecasts));
 						const temp = maxTime < minTime ? maxTemp : minTemp
 						
-						for (var i = 0; i< forecasts.length; i++) {
+						for (var i = 0; i < forecasts.length; i++) {
 							rawText = rawText + times[i].getHours() + ':' + forecasts[i] + '<br />'
 						}
 						tempDiv.innerHTML = nowTemp + ':' + temp;//'<sup>o</sup>C'
@@ -210,10 +244,28 @@
                         
                         var windDiv = document.getElementById('wind');
                         windDiv.innerHTML = Math.round(data.current.wind_speed_10m) + windDirectionToArrow(data.current.wind_direction_10m) + degreesToCompass(data.current.wind_direction_10m) + ' ' + Math.round(data.current.wind_gusts_10m);
+
+						console.log(forecasts, times, min(forecasts), max(forecasts));
+						const tempMin = min(forecasts).min
+						const tempMax = max(forecasts).max
+						const tempDiff = tempMax - tempMin
+						const points = forecasts.map(point => mapRange(point, tempMin, tempMax, 0, 100))
+
+						var tempGraphDiv = document.getElementById("tempGraph");
+						tempGraphText = points.map((point,i) => '<div class="value" style="left:'+i*14+'px;top:'+point+'px">-</div>').join('');
+						console.log(tempGraphText);
+						tempGraphDiv.innerHTML = tempGraphText;
+
+
+						
 					});
 				}
 			}
 		}
+
+		const mapRange = (value, fromMin, fromMax, toMin, toMax) => {
+			return toMin + ((value - fromMin) / (fromMax - fromMin)) * (toMax - toMin);
+		};
 
         function degreesToCompass(degrees) {
             const directions = [
