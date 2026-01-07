@@ -24,7 +24,7 @@
 
 	#time.night {
 		color: gray;
-		font-size: 250px;
+		font-size: 240px;
 		width: 100%;
     	text-align: center;
 		left: -10px;
@@ -103,6 +103,11 @@
 
 	#tempGraph .value {
 		position: absolute;
+	}
+
+	#tempGraph .valueSmall {
+		position: absolute;
+		font-size: 25px;
 	}
 
   #bottomright {
@@ -232,36 +237,41 @@
 						}
 
 						nowTemp = Math.round(temperatures[nowIndex]);
-						var times = hourly.slice(nowIndex, 37)
-						var forecasts = temperatures.slice(nowIndex, 37).map(x => Math.round(x))
+						var times = hourly.slice(nowIndex)
+						var forecasts = temperatures.slice(nowIndex, 28)//.map(x => Math.round(x))
 						var futureTemps = temperatures.slice(nowIndex)
+						var futureHours = hourly.slice(nowIndex)
 						
 						var dayMinutes = minutes + hours * 60;
-						var {value: maxTemp, start: maxTime} = nullWrapper(findFirstPeakRange(forecasts));
-						var {value: minTemp, start: minTime} = nullWrapper(findFirstTroughRange(forecasts));
+						var {value: maxTemp, start: maxTime} = nullWrapper(findFirstPeakRange(forecasts)??max(forecasts));
+						var {value: minTemp, start: minTime} = nullWrapper(findFirstTroughRange(forecasts)??min(forecasts));
+						
 						const temp = maxTime < minTime ? maxTemp : minTemp
 						
 						for (var i = 0; i < forecasts.length; i++) {
 							rawText = rawText + times[i].getHours() + ':' + forecasts[i] + '<br />'
 						}
-						tempDiv.innerHTML = nowTemp + ':' + temp;//'<sup>o</sup>C'
+						tempDiv.innerHTML = nowTemp + ':' + Math.round(temp);//'<sup>o</sup>C'
 						rawDiv.innerHTML = "<br /><br /><br /><br />" + rawText + 'W' + window.innerWidth + ':H' + window.innerHeight + '<br /><pre>' + JSON.stringify(data,null,2) + '</pre>'//.replace(/\n/g,'<br />')
                         
                         var windDiv = document.getElementById('wind');
                         windDiv.innerHTML = Math.round(data.current.wind_speed_10m) + windDirectionToArrow(data.current.wind_direction_10m) + degreesToCompass(data.current.wind_direction_10m) + ' ' + Math.round(data.current.wind_gusts_10m);
 
-						const tempMin = min(futureTemps).min
-						const tempMax = max(futureTemps).max
+						const tempMin = min(futureTemps).value
+						const tempMax = max(futureTemps).value
 						const tempDiff = tempMax - tempMin
 						const points = futureTemps.map(point => mapRange(point, tempMin, tempMax, 0, tempDiff<10?tempDiff*10:100)).map(point=>Math.round(point))
 
 						var tempGraphDiv = document.getElementById("tempGraph");
 						tempGraphText = points.map((point,i) => '<div class="value" style="left:'+i*14+'px;bottom:'+point+'px">-</div>').join('');
-						console.log(tempGraphText);
-						tempGraphDiv.innerHTML = tempGraphText;
 
-
+						const midnights = futureHours.map((time,i) => time.getHours() == 0 ? i : undefined).filter(i => i)
+						tempGraphText += midnights.map(index => '<div class="valueSmall" style="left:'+((index*14)-1)+'px;bottom:'+(points[index]+23)+'px">|</div>').join('');
+					
+						tempGraphText += maxTime == 99 ? '' : '<div class="valueSmall" style="left:'+((maxTime*14)-5)+'px;bottom:'+(points[maxTime]+30)+'px">'+futureTemps[maxTime]+'</div>';
+						tempGraphText += minTime == 99 ? '' : '<div class="valueSmall" style="left:'+((minTime*14)-5)+'px;bottom:'+(points[minTime]-8)+'px">'+futureTemps[minTime]+'</div>';
 						
+						tempGraphDiv.innerHTML = tempGraphText;
 					});
 				}
 			}
@@ -335,7 +345,7 @@
 					time = i
 				}
 			}
-			return {max, time}
+			return {value: max, start: time}
 		}
 
 		function min(arr) {
@@ -347,7 +357,7 @@
 					time = i
 				}
 			}
-			return {min, time}
+			return {value: min, start: time}
 		}
 
         // Alternative version that returns the range of the peak
