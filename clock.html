@@ -243,8 +243,8 @@
 						var futureHours = hourly.slice(nowIndex)
 						
 						var dayMinutes = minutes + hours * 60;
-						var {value: maxTemp, start: maxTime} = nullWrapper(findFirstPeakRange(forecasts)??max(forecasts));
-						var {value: minTemp, start: minTime} = nullWrapper(findFirstTroughRange(forecasts)??min(forecasts));
+						var {value: maxTemp, start: maxTime} = nullWrapper(findFirstPeakRange(forecasts) || max(forecasts));
+						var {value: minTemp, start: minTime} = nullWrapper(findFirstTroughRange(forecasts) || min(forecasts));
 						
 						const temp = maxTime < minTime ? maxTemp : minTemp
 						
