@@ -154,11 +154,11 @@
 			var timeClassName = ' ';
 			var nightContainerClassName = ' ';
 												
-			if (hours == 12 && minutes == 7 && seconds < 5 && !window.location.search.includes('nr=1')) {
-				reload = true;
-				if (!window.timeout)
-					window.timeout = setTimeout(function() {window.location.reload();},10000);
-			}
+			// if (hours == 12 && minutes == 7 && seconds < 5 && !window.location.search.includes('nr=1')) {
+			// 	reload = true;
+			// 	if (!window.timeout)
+			// 		window.timeout = setTimeout(function() {window.location.reload();},10000);
+			// }
 				
 			if (reload)
 				timeClassName += "reload ";
