@@ -29,6 +29,10 @@
     	text-align: center;
 		left: -10px;
 	}
+
+	#time.wideDigits {
+		left: -20px;
+	}
 	
 	#temp {
 		position: absolute;
@@ -63,10 +67,10 @@
 	
 	#date {
 		position:absolute;
-		top: 30px;
+		top: 19px;
 		right: 0;
-		font-size: 105px;
-		width: 120px;
+		font-size: 123px;
+		width: 137px;
     	text-align: center;
 	}
 
@@ -183,13 +187,13 @@
 			var hours12 = hours;	
 			if (hours12 > 12) hours12 -= 12;
 			if (hours12 == 0) hours12 = 12;
-			
+
 			if (minutes < 10) minutes = '0' + minutes;
 			var time = hours12 + ':' + minutes;
 			var timeDiv = document.getElementById("time");
 			timeDiv.innerHTML = time;
 			if (hours12 > 9) {
-				timeDiv.style.left = '-20px'
+				timeClassName += ' wideDigits ';
 			}
 
 			var day = date.getDate();
@@ -287,25 +291,38 @@
 						const midnights = futureHours.map((time,i) => time.getHours() == 0 ? i : undefined).filter(i => i)
 						tempGraphText += midnights.map(index => '<div class="valueSmall" data-value="'+index+'" style="left:'+((index*14)-1)+'px;bottom:'+(points[index]+23)+'px">|</div>').join('');
 						
-						var {value: maxTemp, start: maxTime} = nullWrapper(findFirstPeakRange(forecasts)||max(forecasts));
-						var {value: minTemp, start: minTime} = nullWrapper(findFirstTroughRange(forecasts)||min(forecasts));
+						var {value: maxTemp1, start: maxTime1} = nullWrapper(findFirstPeakRange(forecasts)||max(forecasts));
+						var {value: minTemp1, start: minTime1} = nullWrapper(findFirstTroughRange(forecasts)||min(forecasts));
 					
 						// tempGraphText += maxTime == 99 ? '' : '<div class="valueSmall" style="left:'+((maxTime*14)-5)+'px;bottom:'+(points[maxTime]+30)+'px">'+futureTemps[maxTime]+'</div>';
 						// tempGraphText += minTime == 99 ? '' : '<div class="valueSmall" style="left:'+((minTime*14)-5)+'px;bottom:'+(points[minTime]-8)+'px">'+futureTemps[minTime]+'</div>';
-						tempGraphText += maxTime == 99 ? '' : '<div class="valueSmall" data-value="'+maxTime+'" style="left:'+((maxTime*14)-5)+'px;bottom:'+(points[maxTime]+30)+'px">'+futureTemps[maxTime]+'</div>';
-						tempGraphText += minTime == 99 ? '' : '<div class="valueSmall" data-value="'+minTime+'" style="left:'+((minTime*14)-5)+'px;bottom:'+(points[minTime]-8)+'px">'+futureTemps[minTime]+'</div>';
-						
+						if (maxTime1 < 99) {
+							tempGraphText += maxTime1 == 99 ? '' : '<div class="valueSmall" data-value="'+maxTime1+'" style="left:'+((maxTime1*14)-5)+'px;bottom:'+(points[maxTime1]+30)+'px">'+futureTemps[maxTime1]+'</div>';
+							var {value: maxTemp2, start: maxTime2} = nullWrapper(findFirstPeakRange(forecasts, maxTime1+1)||max(forecasts));
+							console.log(maxTime2)
+							if (maxTime2 < 99) {
+								tempGraphText += maxTime2 == 99 ? '' : '<div class="valueSmall" data-value="'+maxTime2+'" style="left:'+((maxTime2*14)-5)+'px;bottom:'+(points[maxTime2]+30)+'px">'+futureTemps[maxTime2]+'</div>';
+							}
+						}
+						if (minTime1 < 99) {
+							tempGraphText += minTime1 == 99 ? '' : '<div class="valueSmall" data-value="'+minTime1+'" style="left:'+((minTime1*14)-5)+'px;bottom:'+(points[minTime1]-8)+'px">'+futureTemps[minTime1]+'</div>';
+							var {value: minTemp2, start: minTime2} = nullWrapper(findFirstTroughRange(forecasts, minTime1+1)||min(forecasts));
+							console.log(minTime1, minTime2)
+							if (minTime2 < 99) {
+								tempGraphText += minTime2 == 99 ? '' : '<div class="valueSmall" data-value="'+minTime2+'" style="left:'+((minTime2*14)-5)+'px;bottom:'+(points[minTime2]-8)+'px">'+futureTemps[minTime2]+'</div>';
+							}
+						}					
 						tempGraphDiv.innerHTML = tempGraphText;
 
-						const windSpeeds = data.hourly.wind_speed_10m;
-						const windDirections = data.hourly.wind_direction_10m;
-						let windGraphText = '';
-						for (var i = 0; i < 10; i++) {
-							const dataIndex = i * 3 + nowIndex;
+						// const windSpeeds = data.hourly.wind_speed_10m;
+						// const windDirections = data.hourly.wind_direction_10m;
+						// let windGraphText = '';
+						// for (var i = 0; i < 10; i++) {
+						// 	const dataIndex = i * 3 + nowIndex;
 							
-							windGraphText += '<div class="value" style="top:' + (15-windSpeeds[dataIndex]*3) + 'px;left:' + i*40 + 'px;font-size:' + windSpeeds[dataIndex]*5 + 'px">' + windDirectionToArrow(windDirections[dataIndex]) + '</div>';
-						}
-						console.log(windGraphText);
+						// 	windGraphText += '<div class="value" style="top:' + (15-windSpeeds[dataIndex]*3) + 'px;left:' + i*40 + 'px;font-size:' + windSpeeds[dataIndex]*5 + 'px">' + windDirectionToArrow(windDirections[dataIndex]) + '</div>';
+						// }
+						
 						// var windGraphDiv = document.getElementById("windGraph");
 						// windGraphDiv.innerHTML = windGraphText;
 
@@ -399,12 +416,14 @@
 		}
 
         // Alternative version that returns the range of the peak
-        function findFirstPeakRange(arr) {
+        function findFirstPeakRange(arr, start) {
+			let first = start || 1;
+
             if (!arr || arr.length < 3) {
                 return null;
             }
             
-            for (let i = 1; i < arr.length - 1; i++) {
+            for (let i = first; i < arr.length - 1; i++) {
                 if (arr[i] <= arr[i - 1]) {
                     continue;
                 }
@@ -425,12 +444,14 @@
         }
 
         // Version that returns the range of the trough
-        function findFirstTroughRange(arr) {
+        function findFirstTroughRange(arr, start) {
+			let first = start || 1;
+
             if (!arr || arr.length < 3) {
                 return null;
             }
             
-            for (let i = 1; i < arr.length - 1; i++) {
+            for (let i = first; i < arr.length - 1; i++) {
                 if (arr[i] >= arr[i - 1]) {
                     continue;
                 }
