@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Killer Sudoku</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #1a1a2e;
+    --grid-bg: #f7f4ee;
+    --cage-border: #222;
+    --accent: #c0392b;
+    --accent2: #2980b9;
+    --light: #fafaf7;
+    --muted: #888;
+    --panel: #f0ece2;
+    --border: #ccc;
+    --cell-size: 80px;
+  }
+
+  body {
+    font-family: 'Crimson Pro', Georgia, serif;
+    background: var(--light);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  header {
+    width: 100%;
+    background: var(--ink);
+    color: var(--grid-bg);
+    padding: 16px 32px;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    justify-content: space-between;
+  }
+
+  header h1 {
+    font-size: 1.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  header .tagline {
+    font-size: 0.95rem;
+    color: #aaa;
+    font-style: italic;
+  }
+
+  .mode-tabs {
+    display: flex;
+    gap: 8px;
+  }
+
+  .mode-tab {
+    background: transparent;
+    border: 1.5px solid #555;
+    color: #ccc;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    padding: 6px 16px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.15s;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .mode-tab.active, .mode-tab:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .main {
+    display: flex;
+    gap: 32px;
+    padding: 28px 24px;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 1100px;
+  }
+
+  /* ---- GRID ---- */
+  .grid-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  #sudoku-grid {
+    display: grid;
+    grid-template-columns: repeat(9, var(--cell-size));
+    grid-template-rows: repeat(9, var(--cell-size));
+    border: 3px solid var(--ink);
+    background: var(--grid-bg);
+    user-select: none;
+    position: relative;
+  }
+
+  .cell {
+    width: var(--cell-size);
+    height: var(--cell-size);
+    border: 1px solid #bbb;
+    position: relative;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-family: 'Crimson Pro', serif;
+    font-weight: 600;
+    transition: background 0.08s;
+  }
+
+  /* Bold box borders */
+  .cell[data-col="2"], .cell[data-col="5"] { border-right: 2.5px solid var(--ink); }
+  .cell[data-row="2"], .cell[data-row="5"] { border-bottom: 2.5px solid var(--ink); }
+
+  .cell.selected { background: #d6eaff !important; }
+  .cell.cage-hover { background: #fff3cd !important; }
+  .cell.error { color: var(--accent) !important; }
+
+  .cage-sum {
+    position: absolute;
+    top: 2px;
+    left: 3px;
+    font-size: 0.6rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    color: #222;
+    line-height: 1;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* Cage SVG overlay */
+  #cage-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Pencil marks */
+  .pencil-marks {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0; left: 0;
+  }
+
+  .no-pointer {
+    pointer-events: none;
+  }
+
+  .pencil-mark {
+    font-size: 0.55rem;
+    font-family: 'JetBrains Mono', monospace;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    line-height: 1;
+  }
+
+  /* ---- PANEL ---- */
+  .panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 260px;
+  }
+
+  .panel-section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+  }
+
+  .panel-section h3 {
+    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 18px;
+    border: none;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.07em;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+
+  .btn-primary { background: var(--ink); color: #fff; }
+  .btn-primary:hover { background: #333; }
+  .btn-danger { background: var(--accent); color: #fff; }
+  .btn-danger:hover { background: #a93226; }
+  .btn-success { background: #27ae60; color: #fff; }
+  .btn-success:hover { background: #1e8449; }
+  .btn-outline { background: transparent; border: 1.5px solid var(--ink); color: var(--ink); }
+  .btn-outline:hover { background: var(--ink); color: #fff; }
+
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .numpad {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+  }
+
+  .numpad-btn {
+    padding: 10px 4px;
+    background: var(--grid-bg);
+    border: 1.5px solid #ccc;
+    border-radius: 4px;
+    font-family: 'Crimson Pro', serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.1s;
+    text-align: center;
+  }
+
+  .numpad-btn:hover { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .numpad-btn.erase { font-size: 0.75rem; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em; }
+
+  .sum-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 8px;
+  }
+
+  .sum-input-row label {
+    font-size: 0.85rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .sum-input-row input {
+    width: 70px;
+    padding: 6px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    background: var(--grid-bg);
+  }
+
+  /* Cage colour swatches */
+  .cage-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .cage-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .cage-item:hover { background: #e8e4d8; }
+  .cage-item.selected-cage { background: #d6eaff; }
+
+  .cage-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+    border: 1px solid rgba(0,0,0,0.2);
+    flex-shrink: 0;
+  }
+
+  .cage-item-sum {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 0.78rem;
+  }
+
+  .cage-item-cells {
+    color: var(--muted);
+    font-size: 0.75rem;
+    margin-left: auto;
+  }
+
+  /* Puzzle list */
+  .puzzle-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 280px;
+    overflow-y: auto;
+  }
+
+  .puzzle-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: var(--grid-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+
+  .puzzle-item:hover { border-color: var(--accent2); background: #eaf3fb; }
+
+  .puzzle-item-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .puzzle-item-meta {
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .puzzle-item-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 2px 5px;
+    border-radius: 3px;
+    transition: background 0.1s;
+  }
+
+  .icon-btn:hover { background: rgba(0,0,0,0.08); }
+
+  /* Mode overlay messages */
+  .status-bar {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    padding: 6px 0 0;
+    min-height: 1.5em;
+  }
+
+  .status-bar.ok { color: #27ae60; }
+  .status-bar.err { color: var(--accent); }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .input-row input[type="text"] {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    font-family: 'Crimson Pro', serif;
+    font-size: 1rem;
+    background: var(--grid-bg);
+  }
+
+  .play-mode-controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .pencil-toggle {
+    font-size: 0.78rem;
+    padding: 9px 14px;
+  }
+
+  .pencil-toggle.on { background: #f39c12; border-color: #f39c12; color: #fff; }
+
+  /* Congrats overlay */
+  #congrats {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #congrats.show { display: flex; }
+
+  .congrats-box {
+    background: var(--grid-bg);
+    border-radius: 10px;
+    padding: 40px 48px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+
+  .congrats-box h2 { font-size: 2.2rem; color: #27ae60; margin-bottom: 8px; }
+  .congrats-box p { color: var(--muted); margin-bottom: 20px; font-size: 1.1rem; }
+
+  .empty-state {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+    padding: 20px 0;
+    font-style: italic;
+  }
+
+  /* Responsive */
+  @media (max-width: 1020px) {
+    :root { --cell-size: 80px; }
+    .main { flex-direction: column; align-items: center; padding: 16px; }
+    header { padding: 12px 16px; flex-wrap: wrap; gap: 8px; }
+  }
+
+  @media (max-width: 500px) {
+    :root { --cell-size: 38px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Killer Sudoku</h1>
+    <span class="tagline">Draw, save & play</span>
+  </div>
+  <div class="mode-tabs">
+    <button class="mode-tab active" id="tab-draw" onclick="switchMode('draw')">✏ Draw</button>
+    <button class="mode-tab" id="tab-play" onclick="switchMode('play')">▶ Play</button>
+  </div>
+</header>
+
+<div class="main">
+  <div class="grid-wrap">
+    <div id="sudoku-grid"></div>
+    <svg id="cage-overlay"></svg>
+    <div class="status-bar" id="status-bar">Select cells to form a cage, then set its sum.</div>
+  </div>
+
+  <!-- DRAW PANEL -->
+  <div class="panel" id="draw-panel">
+    <div class="panel-section">
+      <h3>New Cage</h3>
+      <p style="font-size:0.85rem;color:var(--muted);margin-bottom:10px;">Click cells to select, then assign a sum.</p>
+      <div class="sum-input-row">
+        <label>Cage sum:</label>
+        <input type="number" id="cage-sum-input" min="1" max="45" placeholder="e.g. 15">
+        <button class="btn btn-primary" onclick="addCage()">Add Cage</button>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <h3>Cages (<span id="cage-count">0</span>)</h3>
+      <div class="cage-list" id="cage-list">
+        <div class="empty-state">No cages yet.</div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <h3>Save Puzzle</h3>
+      <div class="input-row" style="margin-bottom:8px;">
+        <input type="text" id="puzzle-name-input" placeholder="Puzzle name…">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="savePuzzle()">💾 Save</button>
+        <button class="btn btn-outline" onclick="clearGrid()">↺ Clear All</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLAY PANEL -->
+  <div class="panel" id="play-panel" style="display:none;">
+    <div class="panel-section">
+      <h3>Saved Puzzles</h3>
+      <div class="puzzle-list" id="puzzle-list"></div>
+    </div>
+
+    <div class="panel-section" id="play-controls-section" style="display:none;">
+      <h3>Controls</h3>
+      <div class="play-mode-controls" style="margin-bottom:12px;">
+        <button class="btn btn-outline pencil-toggle" id="pencil-toggle-btn" onclick="togglePencil()">✏ Pencil: OFF</button>
+        <button class="btn btn-outline" onclick="clearPlayCell()">⌫ Erase</button>
+        <button class="btn btn-danger" onclick="resetPuzzle()">↺ Reset</button>
+        <button class="btn btn-primary" onclick="checkSolution()">✓ Check</button>
+      </div>
+      <div class="numpad" id="numpad"></div>
+    </div>
+  </div>
+</div>
+
+<div id="congrats">
+  <div class="congrats-box">
+    <h2>🎉 Solved!</h2>
+    <p>Puzzle complete — well done!</p>
+    <button class="btn btn-primary" onclick="closeConrats()">Continue</button>
+  </div>
+</div>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+const CS = 80; // cell size (CSS var synced below)
+let mode = 'draw';
+
+// Draw state
+let selectedCells = new Set(); // "r,c"
+let cages = []; // [{id, cells:["r,c"…], sum, color}]
+
+// Play state
+let activePuzzle = null;
+let playGrid = []; // 9x9 values
+let pencilMarks = []; // 9x9 Set
+let pencilMode = false;
+let playSelectedCell = null; // "r,c"
+
+const CAGE_COLORS = [
+  '#e8f5e9','#e3f2fd','#fff3e0','#fce4ec','#f3e5f5',
+  '#e0f7fa','#f9fbe7','#ede7f6','#fbe9e7','#e8eaf6',
+  '#e0f2f1','#fff8e1','#fafafa','#ffe0b2','#e1f5fe',
+];
+
+document.getElementById('cage-sum-input').addEventListener('keypress', (e) => { if (e.key == "Enter") addCage();} )
+
+// ─── Grid init ────────────────────────────────────────────────────────────────
+function buildGrid() {
+  const grid = document.getElementById('sudoku-grid');
+  grid.innerHTML = '';
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.row = r;
+      cell.dataset.col = c;
+      cell.dataset.key = `${r},${c}`;
+      cell.addEventListener('mousedown', onCellMouseDown);
+      cell.addEventListener('mouseenter', onCellMouseEnter);
+      grid.appendChild(cell);
+    }
+  }
+  document.addEventListener('mouseup', () => {
+    document.getElementById('cage-sum-input').focus();
+    isDragging = false;
+  });
+  resizeOverlay();
+}
+
+let isDragging = false;
+
+function onCellMouseDown(e) {
+  isDragging = true;
+  
+  if (mode === 'draw') toggleDrawSelect(e.currentTarget);
+  else playSelectCell(e.currentTarget);
+}
+
+function onCellMouseEnter(e) {
+  if (!isDragging) return;
+  if (mode === 'draw') toggleDrawSelect(e.currentTarget);
+}
+
+// ─── Draw mode ────────────────────────────────────────────────────────────────
+function toggleDrawSelect(cell) {
+  const key = cell.dataset.key;
+  if (selectedCells.has(key)) {
+    selectedCells.delete(key);
+    cell.classList.remove('selected');
+  } else {
+    // Check not already in a cage
+    if (cellInCage(key)) return;
+    selectedCells.add(key);
+    cell.classList.add('selected');
+  }
+  updateStatus();
+}
+
+function cellInCage(key) {
+  return cages.some(c => c.cells.includes(key));
+}
+
+function updateStatus() {
+  const sb = document.getElementById('status-bar');
+  const n = selectedCells.size;
+  if (n === 0) sb.textContent = 'Click cells to select them for a new cage.';
+  else sb.textContent = `${n} cell${n>1?'s':''} selected — set the sum and click Add Cage.`;
+  sb.className = 'status-bar';
+}
+
+function addCage() {
+  if (selectedCells.size === 0) return setStatus('Select at least one cell.', 'err');
+  const sumVal = parseInt(document.getElementById('cage-sum-input').value);
+  if (!sumVal || sumVal < 1 || sumVal > 405) return setStatus('Enter a valid sum (1–405).', 'err');
+
+  const cells = Array.from(selectedCells);
+  const color = CAGE_COLORS[cages.length % CAGE_COLORS.length];
+  const cage = { id: Date.now(), cells, sum: sumVal, color };
+  cages.push(cage);
+  selectedCells.clear();
+  document.getElementById('cage-sum-input').value = '';
+  renderCages();
+  renderCageList();
+  setStatus(`Cage added (sum ${sumVal}, ${cells.length} cells).`, 'ok');
+}
+
+function removeCage(id) {
+  cages = cages.filter(c => c.id !== id);
+  renderCages();
+  renderCageList();
+}
+
+function renderCages() {
+  // Clear cell colours + overlays
+  document.querySelectorAll('.cell').forEach(cell => {
+    cell.style.background = '';
+    const s = cell.querySelector('.cage-sum');
+    if (s) s.remove();
+  });
+
+  cages.forEach(cage => {
+    // Colour cells
+    cage.cells.forEach(key => {
+      const cell = getCell(key);
+      if (cell) cell.style.background = cage.color;
+    });
+    // Sum label on top-left cell (sorted)
+    const sorted = [...cage.cells].sort((a,b) => {
+      const [ar,ac] = a.split(',').map(Number);
+      const [br,bc] = b.split(',').map(Number);
+      return ar - br || ac - bc;
+    });
+    const cell = getCell(sorted[0]);
+    if (cell) {
+      const label = document.createElement('div');
+      label.className = 'cage-sum';
+      label.textContent = cage.sum;
+      cell.appendChild(label);
+    }
+  });
+
+  drawCageBorders();
+}
+
+function getCell(key) {
+  return document.querySelector(`.cell[data-key="${key}"]`);
+}
+
+// Draw dashed cage borders via SVG
+function drawCageBorders() {
+  const svg = document.getElementById('cage-overlay');
+  svg.innerHTML = '';
+  const cellSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-size')) || 60;
+
+  cages.forEach(cage => {
+    const cellSet = new Set(cage.cells);
+    const edges = [];
+
+    cage.cells.forEach(key => {
+      const [r, c] = key.split(',').map(Number);
+      // top
+      if (!cellSet.has(`${r-1},${c}`)) edges.push([c*cellSize+2, r*cellSize+2, (c+1)*cellSize-2, r*cellSize+2]);
+      // bottom
+      if (!cellSet.has(`${r+1},${c}`)) edges.push([c*cellSize+2, (r+1)*cellSize-2, (c+1)*cellSize-2, (r+1)*cellSize-2]);
+      // left
+      if (!cellSet.has(`${r},${c-1}`)) edges.push([c*cellSize+2, r*cellSize+2, c*cellSize+2, (r+1)*cellSize-2]);
+      // right
+      if (!cellSet.has(`${r},${c+1}`)) edges.push([(c+1)*cellSize-2, r*cellSize+2, (c+1)*cellSize-2, (r+1)*cellSize-2]);
+    });
+
+    edges.forEach(([x1,y1,x2,y2]) => {
+      const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+      line.setAttribute('stroke', '#333');
+      line.setAttribute('stroke-width', '1.5');
+      line.setAttribute('stroke-dasharray', '4,3');
+      svg.appendChild(line);
+    });
+  });
+}
+
+function resizeOverlay() {
+  const grid = document.getElementById('sudoku-grid');
+  const svg = document.getElementById('cage-overlay');
+  const w = grid.offsetWidth;
+  const h = grid.offsetHeight;
+  svg.setAttribute('width', w);
+  svg.setAttribute('height', h);
+  svg.style.width = w + 'px';
+  svg.style.height = h + 'px';
+}
+
+function renderCageList() {
+  const list = document.getElementById('cage-list');
+  document.getElementById('cage-count').textContent = cages.length;
+  if (cages.length === 0) {
+    list.innerHTML = '<div class="empty-state">No cages yet.</div>';
+    return;
+  }
+  list.innerHTML = cages.map(cage => `
+    <div class="cage-item">
+      <div class="cage-swatch" style="background:${cage.color}"></div>
+      <span class="cage-item-sum">${cage.sum}</span>
+      <span class="cage-item-cells">${cage.cells.length} cell${cage.cells.length>1?'s':''}</span>
+      <button class="icon-btn" title="Remove cage" onclick="removeCage(${cage.id})">🗑</button>
+    </div>
+  `).join('');
+}
+
+function clearGrid() {
+  if (cages.length > 0 && !confirm('Clear all cages?')) return;
+  cages = [];
+  selectedCells.clear();
+  renderCages();
+  renderCageList();
+  setStatus('Grid cleared.', 'ok');
+}
+
+// ─── Save / Load ──────────────────────────────────────────────────────────────
+function getPuzzles() {
+  try { return JSON.parse(localStorage.getItem('killer_sudoku_puzzles') || '[]'); }
+  catch { return []; }
+}
+
+function savePuzzles(puzzles) {
+  localStorage.setItem('killer_sudoku_puzzles', JSON.stringify(puzzles));
+  localStorage.setItem('killersudoku_games', JSON.stringify(mapPuzzles(puzzles)));
+}
+
+function mapPuzzles(puzzles) {
+  return puzzles.map(mapPuzzle)
+}
+function mapPuzzle(puzzle) {
+  const {name, id, cages, created} = puzzle; 
+  return {name, id, difficulty: "Easy", cages: cages.map(mapCages)}
+}
+function mapCages(cage) {
+  const {sum, cells} = cage;
+  return {sum, cells: cells.map(mapCell)}
+}
+function mapCell(cell) {
+  const row = parseInt(cell.substring(0,1));
+  const col = parseInt(cell.substring(2,3));
+  return [row,col];
+}
+
+function savePuzzle() {
+  if (cages.length === 0) return setStatus('Add at least one cage before saving.', 'err');
+  const name = document.getElementById('puzzle-name-input').value.trim() || `Puzzle ${new Date().toLocaleDateString()}`;
+  const puzzles = getPuzzles();
+  const puzzle = {
+    id: Date.now(),
+    name,
+    cages,
+    created: new Date().toISOString(),
+  };
+  puzzles.push(puzzle);
+  savePuzzles(puzzles);
+  document.getElementById('puzzle-name-input').value = '';
+  setStatus(`"${name}" saved!`, 'ok');
+  renderPuzzleList();
+}
+
+function deletePuzzle(id) {
+  if (!confirm('Delete this puzzle?')) return;
+  savePuzzles(getPuzzles().filter(p => p.id !== id));
+  renderPuzzleList();
+}
+
+function renderPuzzleList() {
+  const list = document.getElementById('puzzle-list');
+  const puzzles = getPuzzles();
+  if (puzzles.length === 0) {
+    list.innerHTML = '<div class="empty-state">No saved puzzles. Draw one first!</div>';
+    return;
+  }
+  list.innerHTML = puzzles.map(p => `
+    <div class="puzzle-item" onclick="loadPuzzle(${p.id})">
+      <div>
+        <div class="puzzle-item-name">${escHtml(p.name)}</div>
+        <div class="puzzle-item-meta">${p.cages.length} cages · ${new Date(p.created).toLocaleDateString()}</div>
+      </div>
+      <div class="puzzle-item-actions" onclick="event.stopPropagation()">
+        <button class="icon-btn" title="Play" onclick="loadPuzzle(${p.id})">▶</button>
+        <button class="icon-btn" title="Delete" onclick="deletePuzzle(${p.id})">🗑</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ─── Play mode ────────────────────────────────────────────────────────────────
+function loadPuzzle(id) {
+  const puzzles = getPuzzles();
+  const puzzle = puzzles.find(p => p.id === id);
+  if (!puzzle) return;
+
+  activePuzzle = puzzle;
+  cages = JSON.parse(JSON.stringify(puzzle.cages));
+
+  // Init grids
+  playGrid = Array.from({length:9}, () => Array(9).fill(0));
+  
+  pencilMarks = Array.from({length:9}, () => Array.from({length:9}, () => new Set([1,2,3,4,5,6,7,8,9])));
+  pencilMode = false;
+  playSelectedCell = null;
+  document.getElementById('pencil-toggle-btn').textContent = '✏ Pencil: OFF';
+  document.getElementById('pencil-toggle-btn').classList.remove('on');
+
+  renderCages();
+  renderPlayGrid();
+  document.getElementById('play-controls-section').style.display = '';
+  setStatus(`Playing: ${puzzle.name}`, 'ok');
+}
+
+function renderPlayGrid() {
+  document.querySelectorAll('.cell').forEach(cell => {
+    const key = cell.dataset.key;
+    const [r,c] = key.split(',').map(Number);
+    // Remove old value display
+    const existing = cell.querySelector('.cell-value, .pencil-marks');
+    if (existing) existing.remove();
+
+    const v = playGrid[r][c];
+    if (v !== 0) {
+      const span = document.createElement('span');
+      span.className = 'cell-value';
+      span.textContent = v;
+      cell.appendChild(span);
+      cell.style.fontSize = '';
+    } else {
+      // pencil
+      const marks = pencilMarks[r][c];
+      if (marks.size > 0) {
+        const pm = document.createElement('div');
+        pm.className = 'pencil-marks';
+        for (let n = 1; n <= 9; n++) {
+          const d = document.createElement('div');
+          d.className = 'pencil-mark' + (marks.has(n) ? '' : ' no-pointer');
+          d.textContent = marks.has(n) ? n : '';
+          d.dataset.num = n;
+          d.onclick = pencilClick;
+          pm.appendChild(d);
+        }
+        cell.appendChild(pm);
+      }
+    }
+    // Highlight selected
+    if (playSelectedCell === key) cell.classList.add('selected');
+    else cell.classList.remove('selected');
+    // Error highlight
+    cell.classList.remove('error');
+  });
+}
+
+function pencilClick(e) {
+  const pencil = e.currentTarget;
+  const cell = pencil.parentNode.parentNode;
+  const row = cell.dataset.row;
+  const column = cell.dataset.col;
+  pencilMarks[row][column].delete(parseInt(pencil.dataset.num));
+  renderPlayGrid();
+}
+
+function playSelectCell(cell) {
+  playSelectedCell = cell.dataset.key;
+  document.querySelectorAll('.cell').forEach(c => c.classList.remove('selected'));
+  cell.classList.add('selected');
+}
+
+function enterNumber(n) {
+  if (!playSelectedCell) return;
+  const [r,c] = playSelectedCell.split(',').map(Number);
+  if (pencilMode) {
+    if (pencilMarks[r][c].has(n)) pencilMarks[r][c].delete(n);
+    else pencilMarks[r][c].add(n);
+    playGrid[r][c] = 0;
+  } else {
+    playGrid[r][c] = n;
+    pencilMarks[r][c].clear();
+  }
+  clearPencilMarks();
+  renderPlayGrid();
+}
+
+function clearPencilMarks() {
+  for (let i=0; i<9; i++) {
+    const rowCoords = getRowCoords(i);
+    clearPencilMarks(rowCoords);
+
+  }
+}
+
+function getRowCoords(row) {
+  const cols = [0,1,2,3,4,5,6,7,8];
+  return cols.map(col => [row, col]);
+}
+
+function clearPencilMarks(coords) {
+  for (let i=0; i<9; i++) {
+    const [row,col] = coords[i];
+    const value = pencilMarks[row][col].delete()
+  }
+
+}
+function clearPlayCell() {
+  if (!playSelectedCell) return;
+  const [r,c] = playSelectedCell.split(',').map(Number);
+  playGrid[r][c] = 0;
+  pencilMarks[r][c].clear();
+  renderPlayGrid();
+}
+
+function togglePencil() {
+  pencilMode = !pencilMode;
+  const btn = document.getElementById('pencil-toggle-btn');
+  btn.textContent = `✏ Pencil: ${pencilMode ? 'ON' : 'OFF'}`;
+  btn.classList.toggle('on', pencilMode);
+}
+
+function resetPuzzle() {
+  if (!confirm('Reset puzzle?')) return;
+  playGrid = Array.from({length:9}, () => Array(9).fill(0));
+  pencilMarks = Array.from({length:9}, () => Array.from({length:9}, () => new Set()));
+  renderPlayGrid();
+}
+
+function checkSolution() {
+  // Check all cells filled
+  for (let r = 0; r < 9; r++)
+    for (let c = 0; c < 9; c++)
+      if (playGrid[r][c] === 0) return setStatus('Fill in all cells first.', 'err');
+
+  let errors = [];
+
+  // Check rows
+  for (let r = 0; r < 9; r++) {
+    const vals = playGrid[r];
+    if (new Set(vals).size !== 9 || vals.some(v => v<1||v>9)) {
+      for (let c = 0; c < 9; c++) errors.push(`${r},${c}`);
+    }
+  }
+
+  // Check cols
+  for (let c = 0; c < 9; c++) {
+    const vals = playGrid.map(row => row[c]);
+    if (new Set(vals).size !== 9) {
+      for (let r = 0; r < 9; r++) errors.push(`${r},${c}`);
+    }
+  }
+
+  // Check boxes
+  for (let br = 0; br < 3; br++) {
+    for (let bc = 0; bc < 3; bc++) {
+      const vals = [];
+      const keys = [];
+      for (let dr = 0; dr < 3; dr++) for (let dc = 0; dc < 3; dc++) {
+        vals.push(playGrid[br*3+dr][bc*3+dc]);
+        keys.push(`${br*3+dr},${bc*3+dc}`);
+      }
+      if (new Set(vals).size !== 9) keys.forEach(k => errors.push(k));
+    }
+  }
+
+  // Check cage sums
+  cages.forEach(cage => {
+    const sum = cage.cells.reduce((s, key) => {
+      const [r,c] = key.split(',').map(Number);
+      return s + playGrid[r][c];
+    }, 0);
+    if (sum !== cage.sum) cage.cells.forEach(k => errors.push(k));
+  });
+
+  if (errors.length === 0) {
+    document.getElementById('congrats').classList.add('show');
+  } else {
+    const unique = [...new Set(errors)];
+    unique.forEach(key => {
+      const cell = getCell(key);
+      if (cell) cell.classList.add('error');
+    });
+    setStatus(`${unique.length} cell${unique.length>1?'s have':' has'} errors — check highlighted cells.`, 'err');
+  }
+}
+
+function closeConrats() {
+  document.getElementById('congrats').classList.remove('show');
+}
+
+// ─── Numpad ───────────────────────────────────────────────────────────────────
+function buildNumpad() {
+  const np = document.getElementById('numpad');
+  np.innerHTML = '';
+  for (let n = 1; n <= 9; n++) {
+    const btn = document.createElement('button');
+    btn.className = 'numpad-btn';
+    btn.textContent = n;
+    btn.onclick = () => enterNumber(n);
+    np.appendChild(btn);
+  }
+  const erase = document.createElement('button');
+  erase.className = 'numpad-btn erase';
+  erase.textContent = '⌫';
+  erase.onclick = clearPlayCell;
+  np.appendChild(erase);
+}
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (mode === 'play' && playSelectedCell) {
+    if (e.key >= '1' && e.key <= '9') enterNumber(parseInt(e.key));
+    if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0') clearPlayCell();
+    if (e.key === 'p') togglePencil();
+    // Arrow nav
+    const dirs = {ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1]};
+    if (dirs[e.key]) {
+      e.preventDefault();
+      const [r,c] = playSelectedCell.split(',').map(Number);
+      const [dr,dc] = dirs[e.key];
+      const nr = Math.max(0,Math.min(8,r+dr));
+      const nc = Math.max(0,Math.min(8,c+dc));
+      playSelectedCell = `${nr},${nc}`;
+      renderPlayGrid();
+    }
+  }
+  if (mode === 'draw' && e.key === 'Escape') {
+    selectedCells.clear();
+    document.querySelectorAll('.cell').forEach(c => c.classList.remove('selected'));
+    updateStatus();
+  }
+});
+
+// ─── Mode switch ──────────────────────────────────────────────────────────────
+function switchMode(m) {
+  mode = m;
+  document.getElementById('draw-panel').style.display = m === 'draw' ? '' : 'none';
+  document.getElementById('play-panel').style.display = m === 'play' ? '' : 'none';
+  document.getElementById('tab-draw').classList.toggle('active', m === 'draw');
+  document.getElementById('tab-play').classList.toggle('active', m === 'play');
+
+  if (m === 'play') {
+    renderPuzzleList();
+    // Clear grid to blank for puzzle selection
+    if (!activePuzzle) {
+      cages = [];
+      renderCages();
+      setStatus('Select a puzzle to play.', '');
+    }
+  } else {
+    // Return to draw — reload draw cages if any
+    cages = [];
+    renderCages();
+    renderCageList();
+    setStatus('Click cells to select them for a new cage.', '');
+  }
+}
+
+function setStatus(msg, type='') {
+  const sb = document.getElementById('status-bar');
+  sb.textContent = msg;
+  sb.className = 'status-bar' + (type ? ' ' + type : '');
+}
+
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+buildGrid();
+buildNumpad();
+resizeOverlay();
+window.addEventListener('resize', () => { resizeOverlay(); drawCageBorders(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Killer Sudoku</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=Inter:wght@300;400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --surface2: #0f3460;
+    --cell-bg: #f5f0e8;
+    --cell-hover: #ede5d0;
+    --cell-selected: #ffd166;
+    --cell-related: #e8e0cc;
+    --cell-conflict: #ff6b6b33;
+    --cell-given: #d4c9a8;
+    --cage-colors: #e63946, #457b9d, #2a9d8f, #e9c46a, #f4a261, #264653, #8338ec, #06d6a0;
+    --text-dark: #1a1a2e;
+    --text-light: #e8e0cc;
+    --text-muted: #8892a4;
+    --accent: #ffd166;
+    --correct: #06d6a0;
+    --error: #ef233c;
+    --border-radius: 4px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text-light);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+    gap: 20px;
+  }
+
+  h1 {
+    font-family: 'Caveat', cursive;
+    font-size: 2.4rem;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+
+  /* ── GAME SELECT ── */
+  #game-select-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+    max-width: 500px;
+  }
+
+  #game-select-screen p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .game-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .game-card {
+    background: var(--surface);
+    border: 1px solid #ffffff18;
+    border-radius: 8px;
+    padding: 14px 18px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  }
+  .game-card:hover {
+    background: var(--surface2);
+    border-color: var(--accent);
+    transform: translateX(3px);
+  }
+  .game-card-title { font-weight: 500; font-size: 1rem; }
+  .game-card-meta { font-size: 0.78rem; color: var(--text-muted); margin-top: 3px; }
+  .game-card-arrow { color: var(--accent); font-size: 1.2rem; }
+
+  .no-games {
+    background: var(--surface);
+    border: 1px dashed #ffffff30;
+    border-radius: 8px;
+    padding: 32px;
+    text-align: center;
+    color: var(--text-muted);
+    line-height: 1.8;
+  }
+  .no-games code {
+    display: block;
+    margin-top: 12px;
+    font-size: 0.75rem;
+    color: var(--accent);
+    background: #ffffff0a;
+    padding: 10px 14px;
+    border-radius: 4px;
+    text-align: left;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  /* ── GAME UI ── */
+  #game-screen { display: none; flex-direction: column; align-items: center; gap: 16px; width: 100%; }
+
+  .game-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .back-btn {
+    background: none;
+    border: 1px solid #ffffff30;
+    color: var(--text-muted);
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-family: 'Inter', sans-serif;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .back-btn:hover { color: var(--text-light); border-color: #ffffff60; }
+
+  .game-title-bar { font-family: 'Caveat', cursive; font-size: 1.4rem; color: var(--accent); }
+
+  .timer {
+    font-variant-numeric: tabular-nums;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    min-width: 52px;
+    text-align: right;
+  }
+
+  /* ── BOARD ── */
+  .board-wrapper {
+    position: relative;
+    background: #2a2a4a;
+    border-radius: 6px;
+    padding: 3px;
+    box-shadow: var(--shadow);
+    width: 100%;
+  }
+
+  #board {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    grid-template-rows: repeat(9, 1fr);
+    gap: 0;
+    border: 3px solid #e8e0cc;
+    position: relative;
+    background: #888;
+    user-select: none;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+  }
+
+  .cell {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: var(--cell-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    border: 1px solid #ccc4aa;
+    transition: background 0.08s;
+    font-family: 'Inter', sans-serif;
+    font-size: calc(var(--cell-size) * 0.45);
+    font-weight: 500;
+    color: var(--text-dark);
+  }
+
+  /* Bold lines every 3 cells */
+  .cell[data-col="2"], .cell[data-col="5"] { border-right: 2.5px solid #888; }
+  .cell[data-row="2"], .cell[data-row="5"] { border-bottom: 2.5px solid #888; }
+
+  .cell:hover { background: var(--cell-hover); }
+  .cell.selected { background: var(--cell-selected) !important; }
+  .cell.related { background: var(--cell-related); }
+  .cell.conflict { background: var(--cell-conflict); }
+  .cell.prefilled {
+    color: #2c2c2c;
+    font-weight: 600;
+  }
+  .cell.user-filled { color: #1a4fad; }
+  .cell.correct-flash { background: #06d6a033 !important; }
+  .cell.error-cell { color: var(--error) !important; }
+
+  /* Cage sum label */
+  .cage-sum {
+    position: absolute;
+    top: 4%;
+    left: 3%;
+    font-family: 'Caveat', cursive;
+    line-height: 1;
+    pointer-events: none;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    max-width: 48%;
+  }
+  .cage-sum-number {
+    font-size: calc(var(--cell-size) * 0.26);
+    font-weight: 600;
+    line-height: 1;
+  }
+  .cage-combos {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .cage-combo-row {
+    font-size: calc(var(--cell-size) * 0.14);
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+    opacity: 0.75;
+  }
+
+  /* Cage borders: inset overlay so lines sit 1px inside the cell edge */
+  .cage-overlay {
+    position: absolute;
+    inset: 1px;
+    pointer-events: none;
+    z-index: 3;
+    border: 0px dashed transparent;
+  }
+  .cage-overlay.cage-border-top    { border-top-width: 2px; border-top-style: dashed; }
+  .cage-overlay.cage-border-right  { border-right-width: 2px; border-right-style: dashed; }
+  .cage-overlay.cage-border-bottom { border-bottom-width: 2px; border-bottom-style: dashed; }
+  .cage-overlay.cage-border-left   { border-left-width: 2px; border-left-style: dashed; }
+
+  /* Pencil marks */
+  .pencil-marks {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 50%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    pointer-events: none;
+    padding: 1px;
+  }
+  .pencil-mark {
+    font-size: calc(var(--cell-size) * 0.16);
+    font-weight: 300;
+    color: #999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .pencil-mark-active {
+    pointer-events: all;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.1s, color 0.1s;
+  }
+  .pencil-mark-active:hover {
+    background: #ef233c33;
+    color: var(--error);
+  }
+
+  /* ── NUMPAD ── */
+  .controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .mode-toggle {
+    display: flex;
+    gap: 0;
+    border: 1px solid #ffffff20;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .mode-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    padding: 7px 20px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    transition: background 0.15s, color 0.15s;
+  }
+  .mode-btn.active { background: var(--accent); color: var(--text-dark); font-weight: 600; }
+
+  .numpad {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    width: 100%;
+  }
+
+  .num-btn {
+    background: var(--surface);
+    border: 1px solid #ffffff18;
+    border-radius: 6px;
+    color: var(--text-light);
+    font-family: 'Inter', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 500;
+    padding: 14px 0;
+    cursor: pointer;
+    transition: background 0.1s, border-color 0.1s;
+  }
+  .num-btn:hover { background: var(--surface2); border-color: var(--accent); }
+  .num-btn.erase { font-size: 0.9rem; color: var(--text-muted); }
+
+  .action-row {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+  }
+  .action-btn {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid #ffffff18;
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    padding: 10px;
+    cursor: pointer;
+    transition: background 0.1s, color 0.1s;
+  }
+  .action-btn:hover { background: var(--surface2); color: var(--text-light); }
+  .action-btn.check-btn { border-color: var(--correct); color: var(--correct); }
+  .action-btn.check-btn:hover { background: var(--correct); color: #000; }
+
+  /* ── MESSAGES ── */
+  #message-bar {
+    min-height: 28px;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    transition: color 0.2s;
+  }
+  #message-bar.success { color: var(--correct); font-weight: 600; font-size: 1rem; }
+  #message-bar.error   { color: var(--error); }
+  #message-bar.warn    { color: var(--accent); }
+
+  /* ── WIN OVERLAY ── */
+  #win-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #000000cc;
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  #win-overlay.show { display: flex; }
+  .win-card {
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 40px 48px;
+    text-align: center;
+    box-shadow: 0 0 60px #ffd16640;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .win-card h2 { font-family: 'Caveat', cursive; font-size: 2.4rem; color: var(--accent); }
+  .win-card p  { color: var(--text-muted); font-size: 0.9rem; }
+  .win-card button {
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    padding: 10px 24px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text-dark);
+    margin-top: 8px;
+  }
+
+
+
+</style>
+</head>
+<body>
+
+<h1>Killer Sudoku</h1>
+
+<!-- GAME SELECT -->
+<div id="game-select-screen">
+  <p>Select a puzzle to play</p>
+  <div class="game-list" id="game-list"></div>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game-screen">
+  <div class="game-header">
+    <button class="back-btn" onclick="showSelectScreen()">← Puzzles</button>
+    <div class="game-title-bar" id="game-title">Puzzle</div>
+    <div class="timer" id="timer">0:00</div>
+  </div>
+
+  <div class="board-wrapper">
+    <div id="board"></div>
+  </div>
+
+  <div id="message-bar"></div>
+
+  <div class="controls">
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="mode-normal" onclick="setMode('normal')">Normal</button>
+      <button class="mode-btn" id="mode-pencil" onclick="setMode('pencil')">Pencil</button>
+    </div>
+    <div class="numpad" id="numpad"></div>
+    <div class="action-row">
+      <button class="action-btn" onclick="undoMove()">↩ Undo</button>
+      <button class="action-btn" onclick="clearCell()">✕ Clear</button>
+      <button class="action-btn check-btn" onclick="checkSolution()">✓ Check</button>
+    </div>
+  </div>
+</div>
+
+<!-- WIN OVERLAY -->
+<div id="win-overlay">
+  <div class="win-card">
+    <h2>🎉 Solved!</h2>
+    <p id="win-time-msg">Well done!</p>
+    <button onclick="showSelectScreen(); document.getElementById('win-overlay').classList.remove('show')">Back to Puzzles</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  DATA FORMAT (what to store in localStorage)
+//
+//  Key: "killersudoku_games"
+//  Value: JSON array of puzzle objects:
+//
+//  {
+//    id: "unique-string",
+//    name: "Easy #1",
+//    difficulty: "Easy",          // optional
+//    cages: [
+//      {
+//        sum: 15,
+//        cells: [[0,0],[0,1],[0,2]]  // [row, col], 0-indexed
+//      },
+//      ...
+//    ]
+//  }
+//
+//  A cell's value can optionally be pre-filled:
+//  add "given": [[row, col, value], ...] to prefill cells.
+// ══════════════════════════════════════════════════════
+
+// ── Demo puzzle injected if localStorage is empty ──
+// Solution grid:
+// [1,2,3,4,5,6,7,8,9]
+// [4,5,6,7,8,9,1,2,3]
+// [7,8,9,1,2,3,4,5,6]
+// [2,3,4,5,6,7,8,9,1]
+// [5,6,7,8,9,1,2,3,4]
+// [8,9,1,2,3,4,5,6,7]
+// [3,4,5,6,7,8,9,1,2]
+// [6,7,8,9,1,2,3,4,5]
+// [9,1,2,3,4,5,6,7,8]
+const DEMO_PUZZLES = [
+  {
+    id: "demo1",
+    name: "Demo — Hard",
+    difficulty: "Hard",
+    cages: [
+      { sum: 6,  cells: [[0,0],[0,1],[0,2]] },
+      { sum: 9,  cells: [[0,3],[0,4]] },
+      { sum: 15, cells: [[0,5],[1,5]] },
+      { sum: 27, cells: [[0,6],[0,7],[0,8],[1,8]] },
+      { sum: 9,  cells: [[1,0],[1,1]] },
+      { sum: 15, cells: [[1,2],[2,2]] },
+      { sum: 15, cells: [[1,3],[1,4]] },
+      { sum: 3,  cells: [[1,6],[1,7]] },
+      { sum: 17, cells: [[2,0],[2,1],[3,0]] },
+      { sum: 6,  cells: [[2,3],[2,4],[2,5]] },
+      { sum: 15, cells: [[2,6],[2,7],[2,8]] },
+      { sum: 14, cells: [[3,1],[3,2],[4,2]] },
+      { sum: 11, cells: [[3,3],[3,4]] },
+      { sum: 12, cells: [[3,5],[4,5],[5,5]] },
+      { sum: 18, cells: [[3,6],[3,7],[3,8]] },
+      { sum: 13, cells: [[4,0],[5,0]] },
+      { sum: 23, cells: [[4,1],[4,3],[4,4]] },
+      { sum: 9,  cells: [[4,6],[4,7],[4,8]] },
+      { sum: 10, cells: [[5,1],[5,2]] },
+      { sum: 5,  cells: [[5,3],[5,4]] },
+      { sum: 18, cells: [[5,6],[5,7],[5,8]] },
+      { sum: 7,  cells: [[6,0],[6,1]] },
+      { sum: 18, cells: [[6,2],[6,3],[6,4]] },
+      { sum: 10, cells: [[6,5],[7,5]] },
+      { sum: 12, cells: [[6,6],[6,7],[6,8]] },
+      { sum: 15, cells: [[7,0],[8,0]] },
+      { sum: 15, cells: [[7,1],[7,2]] },
+      { sum: 10, cells: [[7,3],[7,4]] },
+      { sum: 12, cells: [[7,6],[7,7],[7,8]] },
+      { sum: 3,  cells: [[8,1],[8,2]] },
+      { sum: 12, cells: [[8,3],[8,4],[8,5]] },
+      { sum: 21, cells: [[8,6],[8,7],[8,8]] },
+    ]
+  }
+];
+
+// ── State ──
+let games = [];
+let currentGame = null;
+let grid = [];          // 9x9 of { value, pencil, prefilled, cageIdx }
+let selectedCell = null;
+let inputMode = 'normal';
+let undoStack = [];
+let timerInterval = null;
+let timerSeconds = 0;
+let cageColorMap = {};
+let cageCombos = {};   // idx -> array of combo arrays e.g. [[1,4],[2,3]]
+let cageLabelCells = {}; // idx -> [r, c] of label cell
+
+const CAGE_PALETTE = [
+  '#e63946','#457b9d','#2a9d8f','#e9c46a','#f4a261',
+  '#8338ec','#06d6a0','#fb5607','#3a86ff','#ff006e',
+  '#8ecae6','#023047','#ffb703','#219ebc','#a8dadc',
+];
+
+// ── Init ──
+function init() {
+  loadGames();
+  buildNumpad();
+  renderSelectScreen();
+
+  // Keep --cell-size in sync with actual rendered board cell width
+  const boardEl = document.getElementById('board');
+  function updateCellSize() {
+    const w = boardEl.getBoundingClientRect().width;
+    const cellPx = w / 9;
+    document.documentElement.style.setProperty('--cell-size', cellPx + 'px');
+  }
+  new ResizeObserver(updateCellSize).observe(boardEl);
+  updateCellSize();
+}
+
+function loadGames() {
+  try {
+    const raw = localStorage.getItem('killersudoku_games');
+    games = raw ? JSON.parse(raw) : [];
+  } catch(e) { games = []; }
+
+  if (games.length === 0) {
+    games = DEMO_PUZZLES;
+    // Don't save demo to localStorage — just use in memory
+  }
+}
+
+// ── Select Screen ──
+function renderSelectScreen() {
+  const list = document.getElementById('game-list');
+  list.innerHTML = '';
+
+  if (games.length === 0) {
+    list.innerHTML = `<div class="no-games">
+      No puzzles found in localStorage.<br>
+      Add puzzles under key <strong>killersudoku_games</strong>.<br>
+      <code>${JSON.stringify([{
+        id:"puzzle1", name:"My Puzzle", difficulty:"Medium",
+        cages:[{sum:15,cells:[[0,0],[0,1],[0,2]]}]
+      }], null, 2)}</code>
+    </div>`;
+    return;
+  }
+
+  games.forEach(g => {
+    const card = document.createElement('div');
+    card.className = 'game-card';
+    card.innerHTML = `
+      <div>
+        <div class="game-card-title">${escHtml(g.name || g.id)}</div>
+        <div class="game-card-meta">${g.difficulty ? escHtml(g.difficulty) + ' · ' : ''}${g.cages?.length || 0} cages</div>
+      </div>
+      <div class="game-card-arrow">→</div>`;
+    card.onclick = () => startGame(g);
+    list.appendChild(card);
+  });
+}
+
+function showSelectScreen() {
+  stopTimer();
+  document.getElementById('game-screen').style.display = 'none';
+  document.getElementById('game-select-screen').style.display = 'flex';
+  document.getElementById('win-overlay').classList.remove('show');
+}
+
+// ── Game Setup ──
+function startGame(game) {
+  currentGame = game;
+  selectedCell = null;
+  undoStack = [];
+  timerSeconds = 0;
+  inputMode = 'normal';
+
+  // Build empty grid
+  grid = Array.from({length:9}, (_,r) =>
+    Array.from({length:9}, (_,c) => ({
+      value: 0,
+      pencil: new Set([1,2,3,4,5,6,7,8,9]),
+      prefilled: false,
+      cageIdx: -1,
+      row: r, col: c
+    }))
+  );
+
+  // Assign cells to cages
+  cageColorMap = {};
+  cageCombos = {};
+  cageLabelCells = {};
+  game.cages.forEach((cage, idx) => {
+    cage.cells.forEach(([r,c]) => {
+      grid[r][c].cageIdx = idx;
+    });
+    cageColorMap[idx] = CAGE_PALETTE[idx % CAGE_PALETTE.length];
+    cageCombos[idx] = calcCombos(cage.sum, cage.cells.length);
+    const sorted = [...cage.cells].sort(([r1,c1],[r2,c2]) => r1-r2 || c1-c2);
+    cageLabelCells[idx] = sorted[0];
+  });
+
+  // Pre-filled cells
+  if (game.given) {
+    game.given.forEach(([r,c,v]) => {
+      grid[r][c].value = v;
+      grid[r][c].prefilled = true;
+      grid[r][c].pencil.clear();
+    });
+  }
+
+  document.getElementById('game-title').textContent = game.name || game.id;
+  document.getElementById('game-select-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'flex';
+  setMode('normal');
+  renderBoard();
+  // Prune pencil marks not in any cage combo
+  currentGame.cages.forEach((_, idx) => {
+    pruneCagePencilMarks(idx, getActiveCombos(idx));
+  });
+  setMessage('');
+  startTimer();
+}
+
+// ── Board Rendering ──
+function renderBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.row = r;
+      cell.dataset.col = c;
+      cell.onclick = () => selectCell(r, c);
+
+      const cageIdx = grid[r][c].cageIdx;
+      const color = cageIdx >= 0 ? cageColorMap[cageIdx] : '#888';
+
+      // Cage borders — inset overlay div so lines sit inside the cell
+      if (cageIdx >= 0) {
+        const cage = currentGame.cages[cageIdx];
+        const cageSet = new Set(cage.cells.map(([cr,cc]) => `${cr},${cc}`));
+        const overlay = document.createElement('div');
+        overlay.className = 'cage-overlay';
+        if (!cageSet.has(`${r-1},${c}`)) overlay.classList.add('cage-border-top');
+        if (!cageSet.has(`${r+1},${c}`)) overlay.classList.add('cage-border-bottom');
+        if (!cageSet.has(`${r},${c-1}`)) overlay.classList.add('cage-border-left');
+        if (!cageSet.has(`${r},${c+1}`)) overlay.classList.add('cage-border-right');
+        overlay.style.borderColor = color;
+        cell.appendChild(overlay);
+      }
+
+      // Cage label (sum + combos) — show on the top-left cell of each cage
+      if (cageIdx >= 0) {
+        const cage = currentGame.cages[cageIdx];
+        const [lr, lc] = cageLabelCells[cageIdx];
+        if (lr === r && lc === c) {
+          const label = document.createElement('div');
+          label.className = 'cage-sum';
+          label.style.color = color;
+
+          const sumSpan = document.createElement('span');
+          sumSpan.className = 'cage-sum-number';
+          sumSpan.textContent = cage.sum;
+          label.appendChild(sumSpan);
+
+          const combosDiv = document.createElement('div');
+          combosDiv.className = 'cage-combos';
+          renderCombosInto(combosDiv, cageIdx);
+          label.appendChild(combosDiv);
+
+          cell.appendChild(label);
+        }
+      }
+
+      updateCellDisplay(cell, r, c);
+      board.appendChild(cell);
+    }
+  }
+}
+
+function updateCellDisplay(cellEl, r, c) {
+  const data = grid[r][c];
+
+  // Remove old value/pencil content (keep cage-sum label)
+  cellEl.querySelectorAll('.cell-value, .pencil-marks').forEach(e => e.remove());
+
+  if (data.value > 0) {
+    const val = document.createElement('div');
+    val.className = 'cell-value';
+    val.textContent = data.value;
+    val.style.cssText = 'position:relative;z-index:1;';
+    if (data.prefilled) cellEl.classList.add('prefilled');
+    else cellEl.classList.add('user-filled');
+    cellEl.appendChild(val);
+  } else if (data.pencil.size > 0) {
+    const pm = document.createElement('div');
+    pm.className = 'pencil-marks';
+    for (let n = 1; n <= 9; n++) {
+      const mk = document.createElement('div');
+      const has = data.pencil.has(n);
+      mk.className = 'pencil-mark' + (has ? ' pencil-mark-active' : '');
+      mk.textContent = has ? n : '';
+      if (has) {
+        mk.onclick = e => {
+          e.stopPropagation();
+          selectCell(r, c);
+          pushUndo(r, c);
+          grid[r][c].pencil.delete(n);
+          refreshCell(r, c);
+        };
+      }
+      pm.appendChild(mk);
+    }
+    cellEl.appendChild(pm);
+  }
+}
+
+function refreshCell(r, c) {
+  const cellEl = document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
+  if (!cellEl) return;
+  cellEl.classList.remove('prefilled','user-filled','selected','related','conflict','error-cell','correct-flash');
+  updateCellDisplay(cellEl, r, c);
+
+  // If this cell is a cage label cell, refresh the combos display
+  const cageIdx = grid[r][c].cageIdx;
+  if (cageIdx >= 0) {
+    const [lr, lc] = cageLabelCells[cageIdx];
+    const labelCellEl = document.querySelector(`.cell[data-row="${lr}"][data-col="${lc}"]`);
+    if (labelCellEl) {
+      const combosDiv = labelCellEl.querySelector('.cage-combos');
+      if (combosDiv) renderCombosInto(combosDiv, cageIdx);
+    }
+  }
+
+  applySelectionHighlight();
+}
+
+// ── Selection & Highlighting ──
+function selectCell(r, c) {
+  selectedCell = [r, c];
+  applySelectionHighlight();
+}
+
+function applySelectionHighlight() {
+  document.querySelectorAll('.cell').forEach(el => {
+    el.classList.remove('selected','related','conflict');
+  });
+
+  if (!selectedCell) return;
+  const [sr, sc] = selectedCell;
+  const el = document.querySelector(`.cell[data-row="${sr}"][data-col="${sc}"]`);
+  if (el) el.classList.add('selected');
+}
+
+// ── Input ──
+function setMode(mode) {
+  inputMode = mode;
+  document.getElementById('mode-normal').classList.toggle('active', mode==='normal');
+  document.getElementById('mode-pencil').classList.toggle('active', mode==='pencil');
+}
+
+function buildNumpad() {
+  const pad = document.getElementById('numpad');
+  pad.innerHTML = '';
+  for (let n = 1; n <= 9; n++) {
+    const btn = document.createElement('button');
+    btn.className = 'num-btn';
+    btn.textContent = n;
+    btn.onclick = () => enterNumber(n);
+    pad.appendChild(btn);
+  }
+  const erase = document.createElement('button');
+  erase.className = 'num-btn erase';
+  erase.textContent = '⌫ Erase';
+  erase.onclick = clearCell;
+  pad.appendChild(erase);
+}
+
+function enterNumber(n) {
+  if (!selectedCell) return;
+  const [r, c] = selectedCell;
+  if (grid[r][c].prefilled) return;
+
+  pushUndo(r, c);
+
+  if (inputMode === 'pencil') {
+    grid[r][c].value = 0;
+    if (grid[r][c].pencil.has(n)) grid[r][c].pencil.delete(n);
+    else grid[r][c].pencil.add(n);
+  } else {
+    grid[r][c].pencil.clear();
+    const newVal = grid[r][c].value === n ? 0 : n;
+    grid[r][c].value = newVal;
+    setMessage('');
+    if (newVal > 0) removePeerPencilMarks(r, c, newVal);
+  }
+  refreshCell(r, c);
+  checkAutoWin();
+}
+
+function removePeerPencilMarks(r, c, n) {
+  getPeerCells(r, c).forEach(([pr, pc]) => {
+    if (grid[pr][pc].pencil.has(n)) {
+      pushUndo(pr, pc);
+      grid[pr][pc].pencil.delete(n);
+      refreshCell(pr, pc);
+    }
+  });
+}
+
+function getPeerCells(r, c) {
+  const peers = new Set();
+  for (let i = 0; i < 9; i++) {
+    if (i !== c) peers.add(`${r},${i}`);
+    if (i !== r) peers.add(`${i},${c}`);
+  }
+  const boxR = Math.floor(r / 3) * 3, boxC = Math.floor(c / 3) * 3;
+  for (let dr = 0; dr < 3; dr++)
+    for (let dc = 0; dc < 3; dc++) {
+      const pr = boxR + dr, pc = boxC + dc;
+      if (pr !== r || pc !== c) peers.add(`${pr},${pc}`);
+    }
+  return [...peers].map(k => k.split(',').map(Number));
+}
+
+function clearCell() {
+  if (!selectedCell) return;
+  const [r, c] = selectedCell;
+  if (grid[r][c].prefilled) return;
+  pushUndo(r, c);
+  grid[r][c].value = 0;
+  grid[r][c].pencil.clear();
+  refreshCell(r, c);
+  setMessage('');
+}
+
+// Keyboard support
+document.addEventListener('keydown', e => {
+  if (!selectedCell) return;
+  const [r, c] = selectedCell;
+  const key = e.key;
+
+  if (key >= '1' && key <= '9') {
+    enterNumber(parseInt(key));
+    return;
+  }
+  if (key === 'Backspace' || key === 'Delete' || key === '0') { clearCell(); return; }
+  if (key === 'ArrowUp'    && r > 0) { selectCell(r-1, c); e.preventDefault(); }
+  if (key === 'ArrowDown'  && r < 8) { selectCell(r+1, c); e.preventDefault(); }
+  if (key === 'ArrowLeft'  && c > 0) { selectCell(r, c-1); e.preventDefault(); }
+  if (key === 'ArrowRight' && c < 8) { selectCell(r, c+1); e.preventDefault(); }
+  if (key === 'p' || key === 'P') setMode(inputMode==='pencil'?'normal':'pencil');
+  if ((e.ctrlKey||e.metaKey) && key==='z') { undoMove(); e.preventDefault(); }
+});
+
+// ── Undo ──
+function pushUndo(r, c) {
+  undoStack.push({ r, c, value: grid[r][c].value, pencil: new Set(grid[r][c].pencil) });
+  if (undoStack.length > 200) undoStack.shift();
+}
+
+function undoMove() {
+  if (!undoStack.length) return;
+  const { r, c, value, pencil } = undoStack.pop();
+  grid[r][c].value = value;
+  grid[r][c].pencil = pencil;
+  refreshCell(r, c);
+}
+
+// ── Validation ──
+function checkSolution() {
+  const errors = findErrors();
+  if (isComplete() && errors.length === 0) {
+    handleWin();
+    return;
+  }
+  if (errors.length > 0) {
+    // Flash error cells
+    errors.forEach(([r,c]) => {
+      const el = document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
+      if (el) el.classList.add('error-cell');
+    });
+    setMessage(`${errors.length} error${errors.length>1?'s':''} found — keep trying!`, 'error');
+    setTimeout(() => {
+      errors.forEach(([r,c]) => {
+        const el = document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
+        if (el) el.classList.remove('error-cell');
+      });
+    }, 2000);
+  } else {
+    setMessage('No errors so far — keep going!', 'warn');
+  }
+}
+
+function findErrors() {
+  const errors = [];
+
+  // Row / col / box conflicts
+  for (let i = 0; i < 9; i++) {
+    checkGroup(getRow(i), errors);
+    checkGroup(getCol(i), errors);
+    checkGroup(getBox(Math.floor(i/3)*3, (i%3)*3), errors);
+  }
+
+  // Cage sum violations (only for completed cages)
+  currentGame.cages.forEach(cage => {
+    const vals = cage.cells.map(([r,c]) => grid[r][c].value);
+    if (vals.every(v => v > 0)) {
+      const sum = vals.reduce((a,b) => a+b, 0);
+      if (sum !== cage.sum) cage.cells.forEach(([r,c]) => errors.push([r,c]));
+    }
+  });
+
+  return errors;
+}
+
+function checkGroup(cells, errors) {
+  const seen = {};
+  cells.forEach(([r,c]) => {
+    const v = grid[r][c].value;
+    if (v > 0) {
+      if (seen[v]) {
+        errors.push([r,c]);
+        errors.push(seen[v]);
+      } else seen[v] = [r,c];
+    }
+  });
+}
+
+function getRow(r) { return Array.from({length:9},(_,c)=>[r,c]); }
+function getCol(c) { return Array.from({length:9},(_,r)=>[r,c]); }
+function getBox(startR, startC) {
+  const cells = [];
+  for (let r=startR; r<startR+3; r++)
+    for (let c=startC; c<startC+3; c++) cells.push([r,c]);
+  return cells;
+}
+
+function isComplete() {
+  return grid.every(row => row.every(cell => cell.value > 0));
+}
+
+function checkAutoWin() {
+  if (!isComplete()) return;
+  if (findErrors().length === 0) setTimeout(handleWin, 200);
+}
+
+function handleWin() {
+  stopTimer();
+  const t = formatTime(timerSeconds);
+  document.getElementById('win-time-msg').textContent = `Completed in ${t}`;
+  document.getElementById('win-overlay').classList.add('show');
+}
+
+// ── Timer ──
+function startTimer() {
+  stopTimer();
+  timerSeconds = 0;
+  updateTimerDisplay();
+  timerInterval = setInterval(() => {
+    timerSeconds++;
+    updateTimerDisplay();
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+
+function updateTimerDisplay() {
+  document.getElementById('timer').textContent = formatTime(timerSeconds);
+}
+
+function formatTime(s) {
+  const m = Math.floor(s/60), sec = s%60;
+  return `${m}:${sec.toString().padStart(2,'0')}`;
+}
+
+// ── Cage Combo Logic ──
+function calcCombos(sum, size) {
+  const results = [];
+  function search(remaining, minDigit, combo) {
+    if (combo.length === size) {
+      if (remaining === 0) results.push([...combo]);
+      return;
+    }
+    const spotsLeft = size - combo.length;
+    for (let d = minDigit; d <= 9; d++) {
+      if (d > remaining) break;
+      combo.push(d);
+      search(remaining - d, d + 1, combo);
+      combo.pop();
+    }
+  }
+  search(sum, 1, []);
+  return results;
+}
+
+function getActiveCombos(cageIdx) {
+  const cage = currentGame.cages[cageIdx];
+  // Collect the union of pencil marks still present across cage cells (excluding filled cells)
+  // A combo is still possible if every digit in it still appears as a pencil mark
+  // in at least one unfilled cell (simplified: use the intersection of remaining pencil marks)
+  const filledVals = new Set(
+    cage.cells.map(([r,c]) => grid[r][c].value).filter(v => v > 0)
+  );
+  // Available digits = pencil marks present in any unfilled cage cell
+  const available = new Set();
+  cage.cells.forEach(([r,c]) => {
+    if (grid[r][c].value === 0) grid[r][c].pencil.forEach(n => available.add(n));
+  });
+  return cageCombos[cageIdx].filter(combo => {
+    // combo must contain all filled values, and all its digits must be available
+    for (const d of filledVals) if (!combo.includes(d)) return false;
+    for (const d of combo) if (!filledVals.has(d) && !available.has(d)) return false;
+    return true;
+  });
+}
+
+function renderCombosInto(div, cageIdx) {
+  div.innerHTML = '';
+  const active = getActiveCombos(cageIdx);
+  active.forEach(combo => {
+    const row = document.createElement('div');
+    row.className = 'cage-combo-row';
+    row.textContent = combo.join('');
+    div.appendChild(row);
+  });
+  pruneCagePencilMarks(cageIdx, active);
+}
+
+// Remove pencil marks from unfilled cage cells that don't appear in any active combo
+let _pruning = false;
+function pruneCagePencilMarks(cageIdx, activeCombos) {
+  if (_pruning) return;
+  const cage = currentGame.cages[cageIdx];
+  const allowed = new Set();
+  activeCombos.forEach(combo => combo.forEach(d => allowed.add(d)));
+
+  _pruning = true;
+  cage.cells.forEach(([r, c]) => {
+    if (grid[r][c].value > 0) return;
+    let changed = false;
+    grid[r][c].pencil.forEach(n => {
+      if (!allowed.has(n)) {
+        grid[r][c].pencil.delete(n);
+        changed = true;
+      }
+    });
+    if (changed) refreshCell(r, c);
+  });
+  _pruning = false;
+}
+
+
+function setMessage(text, type='') {
+  const el = document.getElementById('message-bar');
+  el.textContent = text;
+  el.className = type;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Boot ──
+init();
+</script>
+
+<!-- Storage format reference (hidden) -->
+<!--
+  Store puzzles in localStorage under key: killersudoku_games
+  Value: JSON array of puzzle objects. Example:
+
+  [
+    {
+      "id": "puzzle1",
+      "name": "Monday Easy",
+      "difficulty": "Easy",
+      "cages": [
+        { "sum": 3,  "cells": [[0,0],[0,1]] },
+        { "sum": 15, "cells": [[0,2],[0,3],[0,4]] }
+      ],
+      "given": [[4,4,5]]   // optional: pre-filled cells [row, col, value]
+    }
+  ]
+-->
+</body>
+</html>
